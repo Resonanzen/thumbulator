@@ -193,10 +193,25 @@ decode_result (*decodeJumpTable44[4])(const uint16_t pInsn) = {
     decode_error, decode_2lo, /* 10_1100_10XX (2C8 - 2CB) */
     decode_error};
 
+
+
+decode_result decode_47_11(const uint16_t pInsn){
+    if (pInsn == 0xBF30){  //WFI instruction (equivalent to backup instruction for now)
+        decode_result decoded;  /*WFI instruction doesn't need decoding but need to return something to differentiate
+                                from error*/
+        return decoded;
+    }else{
+        decode_error(pInsn);
+    }
+    }
+
+
 decode_result (*decodeJumpTable47[4])(const uint16_t pInsn) = {
     decode_pop,              /* 10_1111_0XXX (2F0 - 2F7) */
     decode_pop, decode_imm8, /* 10_1111_10XX (2F8 - 2FB) */
-    decode_error};
+    decode_47_11};
+
+
 
 decode_result decode_17(const uint16_t pInsn)
 {

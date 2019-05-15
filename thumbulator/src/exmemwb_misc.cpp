@@ -26,6 +26,16 @@ uint32_t movs_i(decode_result const *decoded)
   return 1;
 }
 
+
+uint32_t wfi(decode_result const *decoded){
+    TRACE_INSTRUCTION("BACKUP!%s\n","");
+
+
+    
+    //say that it just takes 1 cycle for now to backup for now
+    return 1;
+}
+
 // MOV - copy the source register value to the destination register
 uint32_t mov_r(decode_result const *decoded)
 {
