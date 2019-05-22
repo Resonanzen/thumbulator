@@ -63,11 +63,19 @@ public:
 
   bool will_backup(stats_bundle *stats) const override
   {
-    return true;
+
+    return stats->backup_requested;
   }
 
   uint64_t backup(stats_bundle *stats) override
   {
+      backup_cpu_state = thumbulator::cpu;
+      //need to backup non-volatile memory to maintain idempotency
+      std::copy(std::begin(thumbulator::FLASH_MEMORY),std::end(thumbulator::FLASH_MEMORY),std::begin(backup_FLASH));
+      std::copy(std::begin(thumbulator::RAM),std::end(thumbulator::RAM),std::begin(backup_RAM));
+
+
+    fprintf(stderr,"BACKUP! saving state at pc = %X\n",thumbulator::cpu_get_pc() - 0x5); //why is the actual PC 5 ahead of what it actually is? i hav eno clue
     // do not touch arch/app state, assume it is all non-volatile
     auto &active_stats = stats->models.back();
     active_stats.num_backups++;
@@ -85,6 +93,15 @@ public:
   {
     last_backup_cycle = stats->cpu.cycle_count;
 
+
+
+      //need to backup non-volatile memory to maintain idempotency
+      std::copy(std::begin(backup_FLASH),std::end(backup_FLASH),std::begin(thumbulator::FLASH_MEMORY));
+      std::copy(std::begin(backup_RAM),std::end(backup_RAM),std::begin(thumbulator::RAM));
+
+
+     thumbulator::cpu = backup_cpu_state;
+      fprintf(stderr,"Restore! restore  state at pc = %X\n",thumbulator::cpu_get_pc() - 0x5);
     // do not touch arch/app state, assume it is all non-volatile
 
     stats->models.back().energy_for_restore = NVP_BEC_RESTORE_ENERGY;
@@ -102,6 +119,9 @@ public:
 private:
   capacitor battery;
 
+  thumbulator::cpu_state backup_cpu_state;
+  uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
+  uint32_t backup_FLASH[FLASH_SIZE_BYTES >>2];
   uint64_t last_backup_cycle = 0u;
   bool active = false;
 };

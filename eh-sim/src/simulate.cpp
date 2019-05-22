@@ -47,7 +47,7 @@ void initialize_system(char const *binary_file)
  *
  * @return Number of cycles to execute that instruction.
  */
-uint32_t step_cpu(std::map<int, int> &temp_pc_map)
+uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bundle *stats)
 {
   thumbulator::BRANCH_WAS_TAKEN = false;
 
@@ -60,14 +60,23 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map)
   auto current_pc = thumbulator::cpu_get_pc();
   temp_pc_map[current_pc]++;
 
-  // fetch
-  uint16_t instruction;
-  thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
-  // decode
-  auto const decoded = thumbulator::decode(instruction);
-  // execute, memory, and write-back
-  uint32_t const instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  uint32_t instruction_ticks = 0;
+    // fetch
+    uint16_t instruction;
+    thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
 
+
+  if (instruction == 0xBF30){
+      //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
+      stats->backup_requested = true;
+  }else{
+      // decode
+      stats->backup_requested = false;
+
+      auto const decoded = thumbulator::decode(instruction);
+      // execute, memory, and write-back
+      instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  }
   // advance to next PC
   if(!thumbulator::BRANCH_WAS_TAKEN) {
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x2);
@@ -227,7 +236,7 @@ stats_bundle simulate(char const *binary_file,
       }
       was_active = true;
 
-      auto const instruction_ticks = step_cpu(temp_pc_map);
+      auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats);
 
       stats.cpu.instruction_count++;
       stats.cpu.cycle_count += instruction_ticks;

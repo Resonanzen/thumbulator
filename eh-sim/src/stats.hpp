@@ -33,6 +33,8 @@ struct system_stats {
    */
   double energy_remaining = 0.0;
 
+
+
 };
 
 struct active_stats {
@@ -169,6 +171,7 @@ struct stats_bundle {
   system_stats system;
   cpu_stats cpu;
 
+  bool backup_requested = true;
   /**
    * Model of multiple active periods.
    */
