@@ -63,31 +63,18 @@ public:
 
   bool will_backup(stats_bundle *stats) const override
   {
-    return stats->cpu.backup_recently_requested;
+    return true;
   }
 
   uint64_t backup(stats_bundle *stats) override
   {
-
-      // can't backup if the power is off
-      //
-    assert(active);
-
-
-    // do not touch arch/app state, assume it is all non-volatile <--should we continue assuming this?
-
-    backup_CPU_state = thumbulator::cpu;
-
-    std::cout <<" BACKUP! \n";
-    //to remain idempotent on an arbitrary checkpoint, need to save non-volatile as well
-    std::copy(std::begin(thumbulator::RAM),std::end(thumbulator::RAM),std::begin(backup_RAM));
-    std::copy(std::begin(thumbulator::FLASH_MEMORY),std::end(thumbulator::FLASH_MEMORY),std::begin(backup_FLASH));
+    // do not touch arch/app state, assume it is all non-volatile
     auto &active_stats = stats->models.back();
     active_stats.num_backups++;
+
     active_stats.time_between_backups += stats->cpu.cycle_count - last_backup_cycle;
     last_backup_cycle = stats->cpu.cycle_count;
 
-    //this stuff needs to be adjusted
     active_stats.energy_for_backups += NVP_BEC_BACKUP_ENERGY;
     battery.consume_energy(NVP_BEC_BACKUP_ENERGY);
 
@@ -114,11 +101,9 @@ public:
 
 private:
   capacitor battery;
-  thumbulator::cpu_state backup_CPU_state;
+
   uint64_t last_backup_cycle = 0u;
   bool active = false;
-  uint32_t backup_RAM[RAM_SIZE_BYTES >>2 ];
-  uint32_t backup_FLASH[FLASH_SIZE_BYTES >>2]; //we also need to backup nonvolatile memory as well, see DINO paper
 };
 }
 

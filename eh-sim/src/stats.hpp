@@ -15,8 +15,6 @@ struct cpu_stats {
    * Number of cycles ticked.
    */
   uint64_t cycle_count = 0u;
-
-  bool backup_recently_requested = false;
 };
 
 struct system_stats {
