@@ -47,7 +47,7 @@ void initialize_system(char const *binary_file)
  *
  * @return Number of cycles to execute that instruction.
  */
-uint32_t step_cpu(std::map<int, int> &temp_pc_map)
+uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme *scheme, stats_bundle* stats)
 {
   thumbulator::BRANCH_WAS_TAKEN = false;
 
@@ -64,10 +64,21 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map)
   uint16_t instruction;
   thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
   // decode
-  auto const decoded = thumbulator::decode(instruction);
-  // execute, memory, and write-back
-  uint32_t const instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  //backup signal is 0xBF30
+  uint32_t instruction_ticks = 0;
 
+  if (instruction == 0xBF30){
+
+      stats->cpu.backup_recently_requested = true;
+      thumbulator::BRANCH_WAS_TAKEN = false;
+
+
+  }else{
+      stats->cpu.backup_recently_requested = false;
+      auto const decoded = thumbulator::decode(instruction);
+      // execute, memory, and write-back
+      instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  }
   // advance to next PC
   if(!thumbulator::BRANCH_WAS_TAKEN) {
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x2);
@@ -75,6 +86,7 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map)
     //TODO: why does branch taken imply pc+4?
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x4);
   }
+
 
   return instruction_ticks;
 }
@@ -199,6 +211,7 @@ stats_bundle simulate(char const *binary_file,
   uint64_t active_start = 0u;
   uint64_t temp_elapsed_cycles = 0;
 
+
   // Execute the program
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
@@ -214,6 +227,12 @@ stats_bundle simulate(char const *binary_file,
         active_start = stats.cpu.cycle_count;
         stats.models.back().energy_start = battery.energy_stored();
 
+        //backup at the very beginning so there's always a state to fall back on
+        if(stats.cpu.instruction_count == 0){
+            scheme ->backup(&stats);
+        }
+
+
         if(stats.cpu.instruction_count != 0) {
 
           // consume energy for restore
@@ -227,7 +246,7 @@ stats_bundle simulate(char const *binary_file,
       }
       was_active = true;
 
-      auto const instruction_ticks = step_cpu(temp_pc_map);
+      auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats);
 
       stats.cpu.instruction_count++;
       stats.cpu.cycle_count += instruction_ticks;
@@ -289,7 +308,7 @@ stats_bundle simulate(char const *binary_file,
       auto harvested_energy = (env_voltage * env_voltage / 30000) * 0.001;
       auto battery_energy = battery.harvest_energy(harvested_energy);
       stats.system.energy_harvested += harvested_energy;
-      //std::cout << "Powered off. Time (s): " << stats.system.time.count() * 1e-9 << " Current energy (nJ): " << battery.energy_stored() * 1e9 << "\n";
+      std::cout << "Powered off. Time (s): " << stats.system.time.count() * 1e-9 << " Current energy (nJ): " << battery.energy_stored() * 1e9 << "\n";
       temp_stats.emplace_back(std::make_tuple(stats.system.time.count(), battery.energy_stored()*1.e9));
     }
   }
