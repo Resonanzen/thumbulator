@@ -275,6 +275,7 @@ stats_bundle simulate(char const *binary_file,
     }
     else { // powered off
       if(was_active) {
+        fprintf(stderr,"Turning off at state pc= %X\n",thumbulator::cpu_get_pc() - 0x5);
         std::cout << "Active period finished in " << temp_elapsed_cycles << " cycles.\n";
         temp_elapsed_cycles = 0;
         // we just powered off

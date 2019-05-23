@@ -56,6 +56,7 @@ public:
     }
     else if (battery.energy_stored() < required_energy)
     {
+
       active = false;
     }
     return active;
