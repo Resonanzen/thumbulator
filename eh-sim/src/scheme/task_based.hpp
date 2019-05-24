@@ -16,6 +16,8 @@ class task_based : public eh_scheme {
 public:
   task_based() : battery(NVP_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
   {
+
+
   }
 
   capacitor &get_battery() override
@@ -125,6 +127,7 @@ private:
   uint32_t backup_FLASH[FLASH_SIZE_BYTES >>2];
   uint64_t last_backup_cycle = 0u;
   bool active = false;
+  bool task_based_chosen = true;
 };
 }
 

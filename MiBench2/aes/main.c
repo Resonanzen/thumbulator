@@ -20,10 +20,16 @@ static void test_decrypt_cbc(void);
 
 int main(void)
 {
+    __asm__("WFI");
     test_encrypt_cbc();
+    __asm__("WFI");
     test_decrypt_cbc();
+
+    __asm__("WFI");
     test_decrypt_ecb();
+__asm__("WFI");
     test_encrypt_ecb();
+__asm__("WFI");
     test_encrypt_ecb_verbose();
     
     return 0;

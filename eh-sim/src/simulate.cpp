@@ -7,7 +7,7 @@
 #include "capacitor.hpp"
 #include "stats.hpp"
 #include "voltage_trace.hpp"
-
+#include <typeinfo>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -28,7 +28,7 @@ void load_program(char const *file_name)
   std::fclose(fd);
 }
 
-void initialize_system(char const *binary_file)
+void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundle* stats)
 {
   // Reset memory, then load program to memory
   std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
@@ -38,8 +38,12 @@ void initialize_system(char const *binary_file)
   // Initialize CPU state
   thumbulator::cpu_reset();
 
+
   // PC seen is PC + 4
   thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x4);
+
+
+
 }
 
 /**
@@ -53,6 +57,9 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bun
 
   if((thumbulator::cpu_get_pc() & 0x1) == 0) {
     printf("Oh no! Current PC: 0x%08X\n", thumbulator::cpu.gpr[15]);
+    printf("Did you remember to add at least a single backup instruction (__asm__(\"WFI\"))? The system needs to fall back "
+           "onto something\n");
+
     throw std::runtime_error("PC moved out of thumb mode.");
   }
 
@@ -65,8 +72,8 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bun
     uint16_t instruction;
     thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
 
-
-  if (instruction == 0xBF30){
+   //std::cout <<  typeid(*scheme).name();
+  if(instruction == 0xBF30){
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
       stats->backup_requested = true;
   }else{
@@ -191,7 +198,7 @@ stats_bundle simulate(char const *binary_file,
   std::vector<std::tuple<uint64_t, uint64_t>> temp_stats;
   std::map<int, int> temp_pc_map;
 
-  initialize_system(binary_file);
+  initialize_system(binary_file, scheme, &stats);
 
   // energy harvesting
   auto &battery = scheme->get_battery();
