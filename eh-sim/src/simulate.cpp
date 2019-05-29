@@ -214,7 +214,7 @@ stats_bundle simulate(char const *binary_file,
 
   uint64_t active_start = 0u;
   uint64_t temp_elapsed_cycles = 0;
-
+  int numActiveCycles = 0;
   // Execute the program
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
@@ -223,6 +223,10 @@ stats_bundle simulate(char const *binary_file,
 
     if(scheme->is_active(&stats)) {
       if(!was_active) {
+          numActiveCycles++;
+          if (numActiveCycles == 10){
+              break;
+          }
         std::cout << "Powering on\n";
         // allocate space for a new active period model
         stats.models.emplace_back();
