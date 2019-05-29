@@ -1,0 +1,28 @@
+Size of voltage trace (ms): 39460
+cycles per sample: 8
+Starting simulation
+Active period finished in 119 cycles.
+Active period finished in 133 cycles.
+Active period finished in 125 cycles.
+Active period finished in 112 cycles.
+Active period finished in 133 cycles.
+Active period finished in 132 cycles.
+Active period finished in 129 cycles.
+Active period finished in 132 cycles.
+Active period finished in 119 cycles.
+Active period finished in 123 cycles.
+Active period finished in 150 cycles.
+Active period finished in 168 cycles.
+Active period finished in 162 cycles.
+Active period finished in 164 cycles.
+Active period finished in 157 cycles.
+Active period finished in 153 cycles.
+Active period finished in 175 cycles.
+Active period finished in 167 cycles.
+Active period finished in 184 cycles.
+Active period finished in 162 cycles.
+Active period finished in 122 cycles.
+Active period finished in 115 cycles.
+Active period finished in 109 cycles.
+Active period finished in 94 cycles.
+Done simulation

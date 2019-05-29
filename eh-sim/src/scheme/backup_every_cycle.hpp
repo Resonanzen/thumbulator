@@ -56,7 +56,7 @@ public:
       // we only need to restore if an instruction has been executed
       required_energy += NVP_BEC_RESTORE_ENERGY;
     }
-    std::cout << "Required energy:" << required_energy*1e9 << "\n";
+    //std::cout << "Required energy:" << required_energy*1e9 << "\n";
     return battery.energy_stored() > required_energy;
   }
 

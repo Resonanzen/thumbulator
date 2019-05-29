@@ -5,7 +5,7 @@
 
 namespace thumbulator {
 
-#define ENABLE_INSTRUCTION_TRACE 1
+#define ENABLE_INSTRUCTION_TRACE 0
 #define TRACE_INSTRUCTION(format, ...)                \
   do {                                                \
     if(ENABLE_INSTRUCTION_TRACE) {                    \
