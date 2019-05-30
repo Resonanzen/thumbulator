@@ -37,6 +37,7 @@ print(len(tasks_per_period))
 
 #plot bar graph
 
+
 plt.bar(index, tasks_per_period)
 plt.xlabel('Active Period')
 plt.ylabel('# of tasks per active period')

@@ -10,7 +10,7 @@ int main(void){
 	int asdf;
 	for (int i = 0; i < 3000; i++){
 		
-		
+		__asm__("WFI");
 		asdf=deg2rad(i);
 	
 	}

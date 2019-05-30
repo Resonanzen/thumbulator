@@ -214,19 +214,16 @@ stats_bundle simulate(char const *binary_file,
 
   uint64_t active_start = 0u;
   uint64_t temp_elapsed_cycles = 0;
-  int numActiveCycles = 0;
+
   // Execute the program
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
     uint64_t elapsed_cycles = 0;
-
+   // std::cout << "Time is: " << stats.system.time.count() ;
     if(scheme->is_active(&stats)) {
       if(!was_active) {
-          numActiveCycles++;
-          if (numActiveCycles == 10){
-              break;
-          }
+
         std::cout << "Powering on\n";
         // allocate space for a new active period model
         stats.models.emplace_back();
@@ -251,6 +248,7 @@ stats_bundle simulate(char const *binary_file,
 
       stats.cpu.instruction_count++;
       stats.cpu.cycle_count += instruction_ticks;
+      //std::cout << "ticks: " << instruction_ticks << "\n";
       stats.models.back().time_for_instructions += instruction_ticks;
       elapsed_cycles += instruction_ticks;
       temp_elapsed_cycles += instruction_ticks;
