@@ -8,7 +8,7 @@ double deg2rad(double deg)
 int main(void){
 
 	int asdf;
-	for (int i = 0; i < 3000; i++){
+	for (int i = 0; i < 30000; i++){
 		
 		__asm__("WFI");
 		asdf=deg2rad(i);

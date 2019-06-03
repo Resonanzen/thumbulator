@@ -140,6 +140,8 @@ void store(uint32_t address, uint32_t value)
     }
 
     FLASH_MEMORY[(address & FLASH_ADDRESS_MASK) >> 2] = value;
+    fprintf(stderr, "Should not write to flash memory! \n");
+    terminate_simulation(1)''
   }
 }
 }
