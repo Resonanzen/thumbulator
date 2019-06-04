@@ -77,7 +77,11 @@ public:
 
     uint64_t backup(stats_bundle *stats) override
     {
-        std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
+
+        std::cout << "Backup: " << stats->system.time.count() *10E-9 << " " << battery.energy_stored() << "\n";
+
+
+        //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
         // do not touch arch/app state, assume it is all non-volatile
         auto &active_stats = stats->models.back();
         active_stats.num_backups++;
@@ -98,10 +102,12 @@ public:
     {
         last_backup_cycle = stats->cpu.cycle_count;
 
+
         // do not touch arch/app state, assume it is all non-volatile
         std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
         std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
         thumbulator::cpu = backup_ARCHITECTURE;
+        std::cout << "RESTORE! Restore at PC = "<< thumbulator::cpu_get_pc() -0x5 << "\n";
         stats->models.back().energy_for_restore = NVP_BEC_RESTORE_ENERGY;
         battery.consume_energy(NVP_BEC_RESTORE_ENERGY);
 

@@ -17,8 +17,9 @@ int main(void)
   int i;
   unsigned long l = 0x3fed0169L;
   struct int_sqrt q;
-
+  
   /* solve soem cubic functions */
+  __asm__("WFI");
   printf("********* CUBIC FUNCTIONS ***********\n\r");
   /* should get 3 solutions: 2, 6 & 2.5   */
   SolveCubic(a1, b1, c1, d1, &solutions, x);  
@@ -34,6 +35,7 @@ int main(void)
   printf("\n\r");
   SolveCubic(a3, b3, c3, d3, &solutions, x);
   printf("Solutions:");
+  __asm__("WFI");
   for(i=0;i<solutions;i++)
     printf(" %f",x[i]);
   printf("\n\r");
@@ -47,6 +49,7 @@ int main(void)
     for(b1=10;b1>0;b1--) {
       for(c1=5;c1<15;c1+=0.5) {
 	for(d1=-1;d1>-11;d1--) {
+	  __asm__("WFI");
 	  SolveCubic(a1, b1, c1, d1, &solutions, x);  
 	  printf("Solutions:");
 	  for(i=0;i<solutions;i++)
@@ -56,7 +59,7 @@ int main(void)
       }
     }
   }
-  
+  __asm__("WFI");
   printf("********* INTEGER SQR ROOTS ***********\n\r");
   /* perform some integer square roots */
   for (i = 0; i < 1001; ++i)
@@ -79,6 +82,6 @@ int main(void)
   printf("\n\r");
   for (X = 0.0; X <= (2 * PI + 1e-6); X += (PI / 180))
     printf("%.12f radians = %3.0f degrees\n\r", X, rad2deg(X));
-  
+    
   return 0;
 }

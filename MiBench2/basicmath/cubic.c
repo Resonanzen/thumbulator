@@ -20,9 +20,9 @@ void SolveCubic(double  a,
       long double    Q = (a1*a1 - 3.0*a2)/9.0;
       long double R = (2.0*a1*a1*a1 - 9.0*a1*a2 + 27.0*a3)/54.0;
       double    R2_Q3 = R*R - Q*Q*Q;
-
+	 
       double    theta;
-
+	__asm__("WFI");
       if (R2_Q3 <= 0)
       {
             *solutions = 3;

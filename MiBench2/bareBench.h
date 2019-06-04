@@ -14,15 +14,15 @@ int main(void)
   //benchmark();
   for(run = 0; run < RUNS; ++run)
   {
-    printf("Run %d\n\r", run+1);
+   
     benchmark();
   }
 
   return 0;
 }
 
-//#define printf(...)
-//#define fprintf(...)
+#define printf(...)
+#define fprintf(...)
 #define main(...) benchmark(__VA_ARGS__)
 
 #endif

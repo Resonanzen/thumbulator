@@ -49,7 +49,7 @@ static void phex(uint8_t* str)
 static void test_encrypt_ecb_verbose(void)
 {
     // Example of more verbose verification
-
+	__asm__("WFI");
     uint8_t i, buf[64], buf2[64];
 
     // 128bit key
@@ -59,15 +59,17 @@ static void test_encrypt_ecb_verbose(void)
                                (uint8_t) 0xae, (uint8_t) 0x2d, (uint8_t) 0x8a, (uint8_t) 0x57, (uint8_t) 0x1e, (uint8_t) 0x03, (uint8_t) 0xac, (uint8_t) 0x9c, (uint8_t) 0x9e, (uint8_t) 0xb7, (uint8_t) 0x6f, (uint8_t) 0xac, (uint8_t) 0x45, (uint8_t) 0xaf, (uint8_t) 0x8e, (uint8_t) 0x51,
                                (uint8_t) 0x30, (uint8_t) 0xc8, (uint8_t) 0x1c, (uint8_t) 0x46, (uint8_t) 0xa3, (uint8_t) 0x5c, (uint8_t) 0xe4, (uint8_t) 0x11, (uint8_t) 0xe5, (uint8_t) 0xfb, (uint8_t) 0xc1, (uint8_t) 0x19, (uint8_t) 0x1a, (uint8_t) 0x0a, (uint8_t) 0x52, (uint8_t) 0xef,
                                (uint8_t) 0xf6, (uint8_t) 0x9f, (uint8_t) 0x24, (uint8_t) 0x45, (uint8_t) 0xdf, (uint8_t) 0x4f, (uint8_t) 0x9b, (uint8_t) 0x17, (uint8_t) 0xad, (uint8_t) 0x2b, (uint8_t) 0x41, (uint8_t) 0x7b, (uint8_t) 0xe6, (uint8_t) 0x6c, (uint8_t) 0x37, (uint8_t) 0x10 };
-
+__asm__("WFI");
     memset(buf, 0, 64);
+__asm__("WFI");
     memset(buf2, 0, 64);
-
+__asm__("WFI");
     // print text to encrypt, key and IV
     printf("ECB encrypt verbose:\n\n");
     printf("plain text:\n");
     for(i = (uint8_t) 0; i < (uint8_t) 4; ++i)
     {
+	__asm__("WFI");
         phex(plain_text + i * (uint8_t) 16);
     }
     printf("\n");
