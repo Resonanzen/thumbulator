@@ -81,7 +81,7 @@ public:
         std::cout << "Backup: " << stats->system.time.count() *10E-9 << " " << battery.energy_stored() << "\n";
 
 
-        //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
+        std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
         // do not touch arch/app state, assume it is all non-volatile
         auto &active_stats = stats->models.back();
         active_stats.num_backups++;
