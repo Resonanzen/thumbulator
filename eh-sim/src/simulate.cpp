@@ -220,13 +220,13 @@ stats_bundle simulate(char const *binary_file,
   std::cout << "Starting simulation\n";
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
     uint64_t elapsed_cycles = 0;
-  //  std::cout << "Time/Energy: " << stats.system.time.count() << " "<< scheme->get_battery().energy_stored() << " "<<"\n";
+    std::cout << "Time/Energy: " << stats.system.time.count() *10E-9 << " "<< scheme->get_battery().energy_stored() << " "<<"\n";
     if(scheme->is_active(&stats)) {
       if(!was_active) {
           activePeriods++;
-//        if (activePeriods == 20){
-//            break;
-//        }
+        if (activePeriods == 20){
+            break;
+        }
         std::cout << "Powering on\n";
         // allocate space for a new active period model
         stats.models.emplace_back();
