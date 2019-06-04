@@ -261,8 +261,8 @@ stats_bundle simulate(char const *binary_file,
 
       if(scheme->will_backup(&stats)) {
         // consume energy for backing up
-        stats.recentlyBackedUp = true;
-        stats.deadTasks = 0;
+        stats.recently_backed_up = true;
+        stats.dead_tasks = 0;
         auto const backup_time = scheme->backup(&stats);
         elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;
@@ -295,18 +295,18 @@ stats_bundle simulate(char const *binary_file,
         // we just powered off
 
 
-        if (!stats.recentlyBackedUp){
-            stats.deadTasks++;
+        if (!stats.recently_backed_up){
+            stats.dead_tasks++;
 
-            if (stats.deadTasks == 2){
+            if (stats.dead_tasks == 2){
                 std::cout << "DEAD TASK! Not progressing" << "\n";
                 break;
             }
         }
 
 
-        if (stats.recentlyBackedUp){
-            stats.recentlyBackedUp = false;
+        if (stats.recently_backed_up){
+            stats.recently_backed_up = false;
         }
         auto &active_period = stats.models.back();
         active_period.time_total = active_period.time_for_instructions +
