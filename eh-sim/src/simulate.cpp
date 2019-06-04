@@ -7,7 +7,7 @@
 #include "capacitor.hpp"
 #include "stats.hpp"
 #include "voltage_trace.hpp"
-
+#include <typeinfo>
 #include <cstring>
 #include <iostream>
 #include <fstream>
@@ -28,7 +28,7 @@ void load_program(char const *file_name)
   std::fclose(fd);
 }
 
-void initialize_system(char const *binary_file)
+void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundle* stats)
 {
   // Reset memory, then load program to memory
   std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
@@ -38,8 +38,12 @@ void initialize_system(char const *binary_file)
   // Initialize CPU state
   thumbulator::cpu_reset();
 
+
   // PC seen is PC + 4
   thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x4);
+
+
+
 }
 
 /**
@@ -47,12 +51,15 @@ void initialize_system(char const *binary_file)
  *
  * @return Number of cycles to execute that instruction.
  */
-uint32_t step_cpu(std::map<int, int> &temp_pc_map)
+uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bundle *stats)
 {
   thumbulator::BRANCH_WAS_TAKEN = false;
 
   if((thumbulator::cpu_get_pc() & 0x1) == 0) {
     printf("Oh no! Current PC: 0x%08X\n", thumbulator::cpu.gpr[15]);
+    printf("Did you remember to add at least a single backup instruction (__asm__(\"WFI\"))? The system needs to fall back "
+           "onto something\n");
+
     throw std::runtime_error("PC moved out of thumb mode.");
   }
 
@@ -60,14 +67,23 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map)
   auto current_pc = thumbulator::cpu_get_pc();
   temp_pc_map[current_pc]++;
 
-  // fetch
-  uint16_t instruction;
-  thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
-  // decode
-  auto const decoded = thumbulator::decode(instruction);
-  // execute, memory, and write-back
-  uint32_t const instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  uint32_t instruction_ticks = 0;
+    // fetch
+    uint16_t instruction;
+    thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
 
+   //std::cout <<  typeid(*scheme).name();
+  if(instruction == 0xBF30){
+      //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
+      stats->backup_requested = true;
+  }else{
+      // decode
+      stats->backup_requested = false;
+
+      auto const decoded = thumbulator::decode(instruction);
+      // execute, memory, and write-back
+      instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
+  }
   // advance to next PC
   if(!thumbulator::BRANCH_WAS_TAKEN) {
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x2);
@@ -124,7 +140,9 @@ stats_bundle simulate(char const *binary_file,
   uint64_t temp_elapsed_cycles = 0;
 
   // init system
-  initialize_system(binary_file);
+  initialize_system(binary_file, scheme, &stats);
+
+  // energy harvesting
   auto &battery = scheme->get_battery();
   auto was_active = false;
 
@@ -142,6 +160,8 @@ stats_bundle simulate(char const *binary_file,
     elapsed_cycles = 0;
 
     // system on
+    uint64_t elapsed_cycles = 0;
+  //  std::cout << "Time/Energy: " << stats.system.time.count() << " "<< scheme->get_battery().energy_stored() << " "<<"\n";
     if(scheme->is_active(&stats)) {
       // system just powered on, start of active period
       if(!was_active) {
@@ -164,11 +184,12 @@ stats_bundle simulate(char const *binary_file,
       was_active = true;
 
       // run one instruction
-      auto const instruction_ticks = step_cpu(temp_pc_map);
+      auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats);
 
       // update stats
       stats.cpu.instruction_count++;
       stats.cpu.cycle_count += instruction_ticks;
+      //std::cout << "ticks: " << instruction_ticks << "\n";
       stats.models.back().time_for_instructions += instruction_ticks;
       elapsed_cycles += instruction_ticks;
       temp_elapsed_cycles += instruction_ticks;
@@ -179,6 +200,8 @@ stats_bundle simulate(char const *binary_file,
       // execute backup
       if(scheme->will_backup(&stats)) {
         // consume energy for backing up
+        stats.recentlyBackedUp = true;
+        stats.deadTasks = 0;
         auto const backup_time = scheme->backup(&stats);
         elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;
@@ -212,9 +235,25 @@ stats_bundle simulate(char const *binary_file,
     else {
       // system was just on, start of off period
       if(was_active) {
+        fprintf(stderr,"Turning off at state pc= %X\n",thumbulator::cpu_get_pc() - 0x5);
         std::cout << "Active period finished in " << temp_elapsed_cycles << " cycles.\n";
         temp_elapsed_cycles = 0;
         // we just powered off
+
+
+        if (!stats.recentlyBackedUp){
+            stats.deadTasks++;
+
+            if (stats.deadTasks == 2){
+                std::cout << "DEAD TASK! Not progressing" << "\n";
+                break;
+            }
+        }
+
+
+        if (stats.recentlyBackedUp){
+            stats.recentlyBackedUp = false;
+        }
         auto &active_period = stats.models.back();
         active_period.time_total = active_period.time_for_instructions +
                                    active_period.time_for_backups + active_period.time_for_restores;

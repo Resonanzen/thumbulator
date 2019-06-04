@@ -132,6 +132,7 @@ uint32_t rev(decode_result const *);
 uint32_t rev16(decode_result const *);
 uint32_t revsh(decode_result const *);
 uint32_t breakpoint(decode_result const *);
+uint32_t wfi(decode_result const *);
 
 uint32_t exmemwb_error(decode_result const *decoded)
 {
@@ -256,7 +257,11 @@ uint32_t (*executeJumpTable47[2])(decode_result const *) = {
 
 uint32_t entry47(decode_result const *decoded)
 {
-  return executeJumpTable47[(insn >> 9) & 0x1](decoded);
+  if (insn == 0xBF30){ //execute WFI instruction
+      return wfi(decoded);
+  } else {
+      return executeJumpTable47[(insn >> 9) & 0x1](decoded);
+  }
 }
 
 uint32_t entry55(decode_result const *decoded)

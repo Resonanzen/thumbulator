@@ -50,14 +50,17 @@ public:
 
   bool is_active(stats_bundle *stats) override
   {
-    auto required_energy = NVP_INSTRUCTION_ENERGY + NVP_BEC_BACKUP_ENERGY;
+      auto required_energy = NVP_INSTRUCTION_ENERGY + NVP_BEC_BACKUP_ENERGY + NVP_BEC_RESTORE_ENERGY;
+      if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
+      {
+          active = true;
+      }
+      else if (battery.energy_stored() < required_energy)
+      {
 
-    if(stats->cpu.instruction_count != 0) {
-      // we only need to restore if an instruction has been executed
-      required_energy += NVP_BEC_RESTORE_ENERGY;
-    }
-    std::cout << "Required energy:" << required_energy*1e9 << "\n";
-    return battery.energy_stored() > required_energy;
+          active = false;
+      }
+      return active;
   }
 
   bool will_backup(stats_bundle *stats) const override
@@ -100,7 +103,7 @@ public:
 
 private:
   capacitor battery;
-
+  bool active;
   uint64_t last_backup_cycle = 0u;
 };
 }

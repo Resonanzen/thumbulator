@@ -33,6 +33,8 @@ struct system_stats {
    */
   double energy_remaining = 0.0;
 
+
+
 };
 
 struct active_stats {
@@ -168,7 +170,9 @@ struct eh_model_parameters {
 struct stats_bundle {
   system_stats system;
   cpu_stats cpu;
-
+  int deadTasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
+  bool backup_requested = true;
+  bool recentlyBackedUp = false;
   /**
    * Model of multiple active periods.
    */
