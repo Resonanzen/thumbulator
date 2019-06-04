@@ -16,14 +16,12 @@ class voltage_trace;
  * @param binary_file The path to the application binary file.
  * @param power The power supply over time.
  * @param scheme The energy harvesting scheme to use.
- * @param always_harvest true to harvest always, false to harvest during off periods only.
  *
  * @return The statistics tracked during the simulation.
  */
 stats_bundle simulate(char const *binary_file,
     ehsim::voltage_trace const &power,
-    eh_scheme *scheme,
-    bool always_harvest);
+    eh_scheme *scheme);
 }
 
 #endif //EH_SIM_SIMULATE_HPP
