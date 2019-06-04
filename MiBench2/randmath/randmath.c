@@ -32,7 +32,7 @@ int main ( void )
     unsigned int rd;
 
     prand=0x1234;
-
+    printf("hi");
     fpout=fopen("abcmath.c","wt");
     if(fpout==NULL) return(1);
 

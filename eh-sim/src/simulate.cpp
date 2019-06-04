@@ -214,16 +214,19 @@ stats_bundle simulate(char const *binary_file,
 
   uint64_t active_start = 0u;
   uint64_t temp_elapsed_cycles = 0;
-
+  uint64_t activePeriods = 0;
   // Execute the program
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
     uint64_t elapsed_cycles = 0;
-   // std::cout << "Time is: " << stats.system.time.count() ;
+  //  std::cout << "Time/Energy: " << stats.system.time.count() << " "<< scheme->get_battery().energy_stored() << " "<<"\n";
     if(scheme->is_active(&stats)) {
       if(!was_active) {
-
+          activePeriods++;
+//        if (activePeriods == 20){
+//            break;
+//        }
         std::cout << "Powering on\n";
         // allocate space for a new active period model
         stats.models.emplace_back();
@@ -258,6 +261,8 @@ stats_bundle simulate(char const *binary_file,
 
       if(scheme->will_backup(&stats)) {
         // consume energy for backing up
+        stats.recentlyBackedUp = true;
+        stats.deadTasks = 0;
         auto const backup_time = scheme->backup(&stats);
         elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;
@@ -288,6 +293,21 @@ stats_bundle simulate(char const *binary_file,
         std::cout << "Active period finished in " << temp_elapsed_cycles << " cycles.\n";
         temp_elapsed_cycles = 0;
         // we just powered off
+
+
+        if (!stats.recentlyBackedUp){
+            stats.deadTasks++;
+
+            if (stats.deadTasks == 2){
+                std::cout << "DEAD TASK! Not progressing" << "\n";
+                break;
+            }
+        }
+
+
+        if (stats.recentlyBackedUp){
+            stats.recentlyBackedUp = false;
+        }
         auto &active_period = stats.models.back();
         active_period.time_total = active_period.time_for_instructions +
                                    active_period.time_for_backups + active_period.time_for_restores;

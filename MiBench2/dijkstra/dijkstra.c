@@ -97,7 +97,7 @@ int dijkstra(int chStart, int chEnd)
 {
   
 
-  
+  __asm__("WFI");
   for (ch = 0; ch < NUM_NODES; ch++)
     {
       rgnNodes[ch].iDist = NONE;

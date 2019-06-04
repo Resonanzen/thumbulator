@@ -72,6 +72,7 @@ char *strsearch(const char *string)
 
 int main()
 {
+      
       char *here;
       char *find_strings[] = { "Kur",
 "gent",
@@ -1694,7 +1695,7 @@ NULL};
 };
       int i;
       int y;
-
+      __asm__("WFI");
       for(y = 0; y < 50; ++y)
       {
       for (i = 0; find_strings[i]; i++)
