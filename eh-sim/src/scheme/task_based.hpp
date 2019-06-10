@@ -25,7 +25,7 @@ public:
 
     uint32_t clock_frequency() const override
     {
-        return NVP_CPU_FREQUENCY;
+        return CORTEX_M0PLUS_FREQUENCY;
     }
 
     double min_energy_to_power_on(stats_bundle *stats) override
@@ -49,14 +49,14 @@ public:
 
         //std::cout << elapsed_cycles << std::endl;
         //not correct..maybe should use CPU cycle
-        battery.consume_energy(elapsed_cycles*NVP_INSTRUCTION_ENERGY);
+        battery.consume_energy(elapsed_cycles*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE);
 
         stats->models.back().energy_for_instructions += NVP_INSTRUCTION_ENERGY*elapsed_cycles;
     }
 
     bool is_active(stats_bundle *stats) override
     {
-        auto required_energy = 32*NVP_INSTRUCTION_ENERGY + NVP_BEC_BACKUP_ENERGY + NVP_BEC_RESTORE_ENERGY;  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
+        auto required_energy = 32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + NVP_BEC_BACKUP_ENERGY + NVP_BEC_RESTORE_ENERGY;  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
         if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
         {
             active = true;
