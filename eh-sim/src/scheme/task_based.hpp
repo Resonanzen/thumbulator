@@ -14,9 +14,16 @@ namespace ehsim {
  */
 class task_based : public eh_scheme {
 public:
-    task_based() : battery(NVP_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
+    task_based() : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
     {
     }
+
+    task_based(uint64_t __system_frequency) : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
+    {
+        system_frequency = __system_frequency;
+    }
+
+
 
     capacitor &get_battery() override
     {
@@ -25,7 +32,7 @@ public:
 
     uint32_t clock_frequency() const override
     {
-        return CORTEX_M0PLUS_FREQUENCY;
+        return system_frequency;
     }
 
     double min_energy_to_power_on(stats_bundle *stats) override
@@ -78,7 +85,7 @@ public:
     uint64_t backup(stats_bundle *stats) override
     {
 
-        std::cout << "Backup: " << stats->system.time.count() *10E-9 << " " << battery.energy_stored() << "\n";
+        std::cout << "Backup: " << stats->system.time.count() *1E-9 << " " << battery.energy_stored() << "\n";
 
 
         //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
@@ -128,6 +135,7 @@ private:
     uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
     uint32_t backup_FLASH[RAM_SIZE_BYTES >>2];
     thumbulator::cpu_state backup_ARCHITECTURE;
+    uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
 };
 }
 

@@ -61,7 +61,8 @@ int main(int argc, char *argv[])
       {"scheme", {"--scheme"}, "the checkpointing scheme to use", 1},
       {"tau_B", {"--tau-b"}, "the backup period for the parametric scheme", 1},
       {"binary", {"-b", "--binary"}, "path to application binary", 1},
-      {"output", {"-o", "--output"}, "output file", 1}}};
+      {"output", {"-o", "--output"}, "output file", 1,},
+      {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,}}};
 
 
 
@@ -99,7 +100,12 @@ int main(int argc, char *argv[])
       auto const tau_b = options["tau_B"].as<int>(1000);
       scheme = std::make_unique<ehsim::parametric>(tau_b);
     } else if(scheme_select == "task") {
-      scheme = std::make_unique<ehsim::task_based>();
+      if (options["system_frequency"].count() == 0){
+        scheme = std::make_unique<ehsim::task_based>();
+      }else {
+        scheme = std::make_unique<ehsim::task_based>(options["system_frequency"].as<uint64_t>());
+      }
+
     } else {
       throw std::runtime_error("Unknown scheme selected.");
     }

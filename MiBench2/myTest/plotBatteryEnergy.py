@@ -26,7 +26,8 @@ backup_Y = []
 harvestedEnergy_Y = []
 harvestedEnergy_X = []
 
-
+activeHarvestedEnergy_X = []
+activeHarvestedEnergy_Y = []
 
 num_backups = 0;
 count = 0;
@@ -44,6 +45,11 @@ for i in range(len(lines)):
 	if (lines[i].startswith("Harvested_Energy")):
 		harvestedEnergy_X.append(float(lines[i].split()[1]));
 		harvestedEnergy_Y.append(float(lines[i].split()[2]));
+
+
+	if (lines[i].startswith("Active_Harvested_Energy")):
+		activeHarvestedEnergy_X.append(float(lines[i].split()[1]));
+		activeHarvestedEnergy_Y.append(float(lines[i].split()[2]));
 		
 
 #plot line graph
@@ -51,12 +57,13 @@ print("DONE!")
 
 fig, axs = plt.subplots(2)
 axs[0].plot(x_axis, energy_in_battery)
-axs[1].plot(harvestedEnergy_X, harvestedEnergy_Y)
-
+axs[1].plot(harvestedEnergy_X, harvestedEnergy_Y,'.',color = 'blue')
+axs[1].plot(activeHarvestedEnergy_X, activeHarvestedEnergy_Y, '.', color = 'red')
+axs[0].scatter(backup_X,backup_Y, marker='x', color = 'red')
 plt.show()
 #plt.plot(x_axis,energy_in_battery,'.')
 
-#plt.scatter(backup_X,backup_Y, marker='x', color = 'red')
+
 
 #plt.xlabel('Time (s)')
 #plt.ylabel('Energy in Capacitor (j)')

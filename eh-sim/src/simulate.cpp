@@ -162,14 +162,14 @@ stats_bundle simulate(char const *binary_file,
 
     // system on
     uint64_t elapsed_cycles = 0;
-    std::cout << "Time/Energy: " << stats.system.time.count()*1E-9 << " "<< scheme->get_battery().energy_stored() << " "<<"\n";
+    std::cout << "Time/Energy: " << stats.system.time.count()*1E-9 << " "<< scheme->get_battery().energy_stored()*1E-9<< " "<<"\n";
     if(scheme->is_active(&stats)) {
 
       // system just powered on, start of active period
       if(!was_active) {
           active_periods++;
 
-          if (active_periods == 500){
+          if (active_periods == 20){
 
               break;
           }
@@ -230,10 +230,10 @@ stats_bundle simulate(char const *binary_file,
         auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
         // cap should not harvest if source voltage is higher than cap voltage
         if (battery.voltage() < env_voltage) {
-            auto battery_energy = battery.harvest_energy(available_energy);
-            std::cout << "Harvested_Energy: " << stats.system.time.count()*1E-9 << " "<<available_energy << "\n";
+            //auto battery_energy = battery.harvest_energy(available_energy);
+           std::cout << "Active_Harvested_Energy: " << stats.system.time.count()*1E-9 << " "<<available_energy << "\n";
 
-            stats.system.energy_harvested += battery_energy;
+          //  stats.system.energy_harvested += battery_energy;
         }
       }
       stats.system.time += elapsed_time;
@@ -283,7 +283,7 @@ stats_bundle simulate(char const *binary_file,
       auto harvested_energy = (env_voltage * env_voltage / 30000) * 0.001;
       battery.harvest_energy(harvested_energy);
       stats.system.energy_harvested += harvested_energy;
-        std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
+       std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
       //std::cout << "Powered off. Time (s): " << stats.system.time.count() * 1e-9 << " Current energy (nJ): " << battery.energy_stored() * 1e9 << "\n";
       // temp stat: system time, battery energy
       temp_stats.emplace_back(std::make_tuple(stats.system.time.count(), battery.energy_stored()*1.e9));

@@ -105,6 +105,7 @@ private:
   capacitor battery;
   bool active;
   uint64_t last_backup_cycle = 0u;
+
 };
 }
 
