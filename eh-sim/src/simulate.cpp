@@ -162,7 +162,7 @@ stats_bundle simulate(char const *binary_file,
 
     // system on
     uint64_t elapsed_cycles = 0;
-    std::cout << "Time/Energy: " << stats.system.time.count()*1E-9 << " "<< scheme->get_battery().energy_stored()*1E-9<< " "<<"\n";
+    std::cout << "Time/Energy: " << stats.system.time.count()*1E-9 << " "<< scheme->get_battery().energy_stored()<< " "<<"\n";
     if(scheme->is_active(&stats)) {
 
       // system just powered on, start of active period

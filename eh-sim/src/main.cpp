@@ -48,9 +48,10 @@ void validate(argagg::parser_results const &options)
   ensure_file_exists(path_to_voltage_trace);
 
   if(options["rate"].count() == 0) {
-    throw std::runtime_error("No sampling rate provided for the voltage trace.");
+   // throw std::runtime_error("No sampling rate provided for the voltage trace.");
   }
 }
+using namespace std::chrono_literals;
 
 int main(int argc, char *argv[])
 {
@@ -79,6 +80,12 @@ int main(int argc, char *argv[])
 
     auto const path_to_voltage_trace = options["voltages"];
     std::chrono::milliseconds sampling_period(options["rate"]);
+
+    if (options["rate"].count() == 0){
+      sampling_period = 1ms;
+    }
+
+
 
     //double const trace_period = 0.001;
     //double const trace_resistance = 30000;
