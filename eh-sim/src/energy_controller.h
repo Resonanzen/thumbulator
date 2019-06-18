@@ -11,8 +11,7 @@
 class energyController {
 
 public:
-    energyController(ehsim::eh_scheme *_scheme, double const capacitance, double const maximum_voltage,
-                     double const maximum_current);
+    energyController(ehsim::eh_scheme *_scheme,  ehsim::voltage_trace const *_power);
 
     bool system_active();
     void time_stamped_voltage();
@@ -22,15 +21,17 @@ public:
     void track_new_active_period();
 
     void run_instruction_and_track_energy(int instruction_ticks);
-
-
-private:
+    void harvest_while_inactive();
     ehsim::stats_bundle stats{};
+private:
+
 
     uint64_t active_start;
-    uint64_t cycles_til_ms = 0;
-    uint64_t cycles_in_active_period = 0;
+    uint64_t elapsed_cycles = 0;
+    uint64_t temp_elapsed_cycles= 0;
     ehsim::eh_scheme *scheme ;
     bool was_active;
+
+    ehsim::voltage_trace const * power;
 };
 #endif //ENERGY_HARVESTING_TIMING_H

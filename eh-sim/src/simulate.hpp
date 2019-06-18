@@ -22,6 +22,11 @@ class voltage_trace;
 stats_bundle simulate(char const *binary_file,
     ehsim::voltage_trace const &power,
     eh_scheme *scheme);
+
+
+    std::chrono::nanoseconds get_time(uint64_t const cycle_count, uint32_t const frequency);
+    std::chrono::milliseconds to_milliseconds(std::chrono::nanoseconds const &time);
+
 }
 
 #endif //EH_SIM_SIMULATE_HPP
