@@ -250,7 +250,8 @@ stats_bundle simulate(char const *binary_file,
       // system was just on, start of off period
       if(was_active) {
         fprintf(stderr,"Turning off at state pc= %X\n",thumbulator::cpu_get_pc() - 0x5);
-        std::cout << "Active period finished in " << temp_elapsed_cycles << " cycles.\n";
+        update_active_period_stats(&stats, scheme);
+        std::cout << "Active period finished in " << temp_elapsed_cycles << " "<< stats.models.back().time_total << "cycles.\n";
         temp_elapsed_cycles = 0;
         // we just powered off
 
@@ -266,7 +267,7 @@ stats_bundle simulate(char const *binary_file,
         if (stats.recentlyBackedUp){
             stats.recentlyBackedUp = false;
         }
-        update_active_period_stats(&stats, scheme);
+
 
       }
       was_active = false;
