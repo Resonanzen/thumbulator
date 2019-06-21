@@ -35,6 +35,9 @@ public:
   {
   }
 
+  void execute_instruction(uint32_t cycles,stats_bundle *stats) override
+  {
+  }
   bool is_active(stats_bundle *stats) override
   {
     return true;

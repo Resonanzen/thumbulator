@@ -24,7 +24,7 @@ namespace ehsim {
         std::chrono::milliseconds last_ms_mark = 0ms;
         std::chrono::nanoseconds system_time = 0ns;
 
-        bool milli_threshold_reached = false;
+
 
         uint64_t system_frequency;
     };

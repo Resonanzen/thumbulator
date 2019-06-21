@@ -74,6 +74,10 @@ public:
     stats->models.back().energy_for_instructions += instruction_energy;
   }
 
+
+  void execute_instruction(uint32_t cycles,stats_bundle *stats)
+  {
+  }
   bool is_active(stats_bundle *stats) override
   {
     if(battery.energy_stored() >= battery.maximum_energy_stored()) {

@@ -36,6 +36,10 @@ public:
     stats->models.back().energy_for_instructions += NVP_INSTRUCTION_ENERGY;
   }
 
+  void execute_instruction(uint32_t cycles,stats_bundle *stats) override
+  {
+  }
+
   bool is_active(stats_bundle *stats) override
   {
     if(battery.energy_stored() >= battery.maximum_energy_stored()) {

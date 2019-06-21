@@ -46,6 +46,15 @@ public:
         return required_energy;
     }
 
+
+    void execute_instruction(uint32_t cycles,stats_bundle *stats){
+
+        double energy_to_consume = cycles * CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE;
+
+        battery.consume_energy(energy_to_consume);
+        stats->models.back().energy_for_instructions +=energy_to_consume;
+    }
+
     void execute_instruction(stats_bundle *stats) override
     {
         //TODO: currently every inst consumes the same energy regardless of cycles (ticks)
@@ -85,7 +94,6 @@ public:
     uint64_t backup(stats_bundle *stats) override
     {
 
-        std::cout << "Backup: " << stats->system.time.count() *1E-9 << " " << battery.energy_stored() << "\n";
 
 
         //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";

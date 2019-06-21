@@ -2,11 +2,12 @@
 
 #include <thumbulator/cpu.hpp>
 #include <thumbulator/memory.hpp>
-
+#include "scheme/data_sheet.hpp"
 #include "scheme/eh_scheme.hpp"
 #include "capacitor.hpp"
 #include "stats.hpp"
 #include "voltage_trace.hpp"
+#include "simul_timer.h"
 #include <typeinfo>
 #include <cstring>
 #include <iostream>
@@ -124,6 +125,22 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
   return dst;
 }
 
+
+void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * scheme){
+  auto &active_period = stats->models.back();
+  active_period.time_total = active_period.time_for_instructions +
+                             active_period.time_for_backups + active_period.time_for_restores;
+  active_period.energy_consumed = active_period.energy_for_instructions +
+                                  active_period.energy_for_backups +
+                                  active_period.energy_for_restore;
+  active_period.progress =
+          active_period.energy_forward_progress / active_period.energy_consumed;
+  active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+}
+
+
+
+
 stats_bundle simulate(char const *binary_file,
     ehsim::voltage_trace const &power,
     eh_scheme *scheme)
@@ -156,21 +173,20 @@ stats_bundle simulate(char const *binary_file,
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
   uint64_t active_periods = 0;
+  double lastTime = 0;
+  simul_timer simul_timer(scheme->clock_frequency());
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
     // init stats
-    elapsed_cycles = 0;
 
-    // system on
-    uint64_t elapsed_cycles = 0;
-    std::cout << "Time/Energy: " << stats.system.time.count()*1E-9 << " "<< scheme->get_battery().energy_stored()<< " "<<"\n";
+
+ //   std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
+
     if(scheme->is_active(&stats)) {
 
       // system just powered on, start of active period
       if(!was_active) {
           active_periods++;
-
-          if (active_periods == 20){
-
+          if (active_periods == 5){
               break;
           }
         std::cout << "Powering on\n";
@@ -182,8 +198,6 @@ stats_bundle simulate(char const *binary_file,
         if(stats.cpu.instruction_count != 0) {
           // consume energy for restore
           auto const restore_time = scheme->restore(&stats);
-
-          elapsed_cycles += restore_time;
           temp_elapsed_cycles += restore_time;
 
           stats.models.back().time_for_restores += restore_time;
@@ -193,17 +207,16 @@ stats_bundle simulate(char const *binary_file,
 
       // run one instruction
       auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats);
-
+      simul_timer.active_tick(instruction_ticks);
       // update stats
       stats.cpu.instruction_count++;
       stats.cpu.cycle_count += instruction_ticks;
       //std::cout << "ticks: " << instruction_ticks << "\n";
       stats.models.back().time_for_instructions += instruction_ticks;
-      elapsed_cycles += instruction_ticks;
       temp_elapsed_cycles += instruction_ticks;
 
       // consume energy for execution
-      scheme->execute_instruction(&stats);
+      scheme->execute_instruction(instruction_ticks,&stats);
 
       // execute backup
       if(scheme->will_backup(&stats)) {
@@ -211,7 +224,6 @@ stats_bundle simulate(char const *binary_file,
         stats.recentlyBackedUp = true;
         stats.deadTasks = 0;
         auto const backup_time = scheme->backup(&stats);
-        elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;
 
         auto &active_stats = stats.models.back();
@@ -219,26 +231,18 @@ stats_bundle simulate(char const *binary_file,
         active_stats.energy_forward_progress = active_stats.energy_for_instructions;
         active_stats.time_forward_progress = stats.cpu.cycle_count - active_start;
       }
-      auto elapsed_time = get_time(elapsed_cycles, scheme->clock_frequency());
 
-      // check if time has passed the ms threshold while in active mode
-      // if time crosses the ms boundary, harvest energy
-      auto elapsed_ms = to_milliseconds(stats.system.time + elapsed_time) - to_milliseconds(stats.system.time);
-      for (int x = 0; x < elapsed_ms.count(); x++)
-      {
-        auto env_voltage = power.get_voltage(to_milliseconds(stats.system.time + std::chrono::milliseconds(x)));
+      if (simul_timer.harvest_while_active()){
+        auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
         auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
         // cap should not harvest if source voltage is higher than cap voltage
         if (battery.voltage() < env_voltage) {
-            //auto battery_energy = battery.harvest_energy(available_energy);
-           std::cout << "Active_Harvested_Energy: " << stats.system.time.count()*1E-9 << " "<<available_energy << "\n";
-
-          //  stats.system.energy_harvested += battery_energy;
+           auto battery_energy = battery.harvest_energy(available_energy);
+          // std::cout << "Active_Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+           stats.system.energy_harvested += battery_energy;
         }
       }
-      stats.system.time += elapsed_time;
-      // temp stat: system time, battery energy
-      temp_stats.emplace_back(std::make_tuple(stats.system.time.count(), battery.energy_stored()*1.e9));
+
     }
 
     // system off
@@ -250,7 +254,6 @@ stats_bundle simulate(char const *binary_file,
         temp_elapsed_cycles = 0;
         // we just powered off
 
-
         if (!stats.recentlyBackedUp){
             stats.deadTasks++;
 
@@ -260,44 +263,27 @@ stats_bundle simulate(char const *binary_file,
             }
         }
 
-
         if (stats.recentlyBackedUp){
             stats.recentlyBackedUp = false;
         }
-        auto &active_period = stats.models.back();
-        active_period.time_total = active_period.time_for_instructions +
-                                   active_period.time_for_backups + active_period.time_for_restores;
-        active_period.energy_consumed = active_period.energy_for_instructions +
-                                        active_period.energy_for_backups +
-                                        active_period.energy_for_restore;
-        active_period.progress =
-            active_period.energy_forward_progress / active_period.energy_consumed;
-        active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+        update_active_period_stats(&stats, scheme);
+
       }
       was_active = false;
 
       // harvest energy while off: jump clock to next ms
-      stats.system.time = to_milliseconds(stats.system.time) + 1ms;
+      simul_timer.inactive_tick();
       // get voltage based current time
-      auto env_voltage = power.get_voltage(to_milliseconds(stats.system.time));
+      auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
       auto harvested_energy = (env_voltage * env_voltage / 30000) * 0.001;
       battery.harvest_energy(harvested_energy);
       stats.system.energy_harvested += harvested_energy;
-       std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
-      //std::cout << "Powered off. Time (s): " << stats.system.time.count() * 1e-9 << " Current energy (nJ): " << battery.energy_stored() * 1e9 << "\n";
-      // temp stat: system time, battery energy
-      temp_stats.emplace_back(std::make_tuple(stats.system.time.count(), battery.energy_stored()*1.e9));
+      // std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
+
     }
   }
 
-  // TODO: remove temp stats output
-  std::ofstream out("temp_stats.out");
-  out.setf(std::ios::fixed);
-  out << "time, energy\n";
-  for (auto const &value : temp_stats)
-  {
-    out << std::get<0>(value) << "," << std::get<1>(value) << "\n";
-  }
+
 
   std::multimap<int, int> temp_sorted_pc_map = flip_map(temp_pc_map);
 

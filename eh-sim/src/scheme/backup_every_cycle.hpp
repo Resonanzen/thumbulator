@@ -48,6 +48,12 @@ public:
     stats->models.back().energy_for_instructions += NVP_INSTRUCTION_ENERGY;
   }
 
+
+  void execute_instruction(uint32_t cycles,stats_bundle *stats) override
+  {
+
+  }
+
   bool is_active(stats_bundle *stats) override
   {
       auto required_energy = NVP_INSTRUCTION_ENERGY + NVP_BEC_BACKUP_ENERGY + NVP_BEC_RESTORE_ENERGY;
