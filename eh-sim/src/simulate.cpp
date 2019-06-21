@@ -138,6 +138,87 @@ void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * s
   active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
 }
 
+void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme){
+  stats->recently_backed_up = true;
+  stats->dead_tasks = 0;
+  auto const backup_time = scheme->backup(stats);
+
+
+  auto &active_stats = stats->models.back();
+  active_stats.time_for_backups += backup_time;
+  active_stats.energy_forward_progress = active_stats.energy_for_instructions;
+  active_stats.time_forward_progress = stats->cpu.cycle_count - active_stats.active_start;
+}
+
+
+void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_trace power, ehsim::stats_bundle *stats, eh_scheme *scheme){
+  auto env_voltage = power.get_voltage(to_milliseconds(simul_timer->current_system_time()));
+  auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
+  // cap should not harvest if source voltage is higher than cap voltage
+  if (scheme->get_battery().voltage() < env_voltage) {
+    auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
+    // std::cout << "Active_Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+     stats->system.energy_harvested += battery_energy;
+  }
+}
+
+void track_new_active_period(stats_bundle *stats, eh_scheme *scheme){
+  stats->models.emplace_back();
+  stats->models.back().active_start = stats->cpu.cycle_count;
+  stats->models.back().energy_start = scheme->get_battery().energy_stored();
+
+  if(stats->cpu.instruction_count != 0) {
+    // consume energy for restore
+    auto const restore_time = scheme->restore(stats);
+
+    stats->models.back().time_for_restores += restore_time;
+  }
+}
+
+
+void update_stats_after_instruction(stats_bundle *stats, uint64_t instruction_ticks){
+  stats->cpu.instruction_count++;
+  stats->cpu.cycle_count += instruction_ticks;
+  stats->models.back().time_for_instructions += instruction_ticks;
+}
+
+
+void update_final_stats(stats_bundle *stats, eh_scheme * scheme, simul_timer * simul_timer){
+    auto &active_period = stats->models.back();
+    active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
+                               active_period.time_for_restores;
+
+
+    active_period.energy_consumed = active_period.energy_for_instructions +
+                                    active_period.energy_for_backups +
+                                    active_period.energy_for_restore;
+
+    active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
+    active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+
+    stats->system.energy_remaining = scheme->get_battery().energy_stored();
+    stats->system.time = simul_timer->current_system_time();
+}
+
+
+bool making_forward_progress(stats_bundle *stats){
+  if (!stats->recently_backed_up){
+    stats->dead_tasks++;
+    if (stats->dead_tasks == 2){
+      std::cout << "DEAD TASK! Not progressing" << "\n";
+      return false;
+    }
+  }
+  if (stats->recently_backed_up){
+    stats->recently_backed_up = false;
+  }
+
+  return true;
+}
+
+
+
+
 
 
 
@@ -147,14 +228,12 @@ stats_bundle simulate(char const *binary_file,
 {
   using namespace std::chrono_literals;
 
+
   // init stats
   stats_bundle stats{};
   stats.system.time = 0ns;
   std::vector<std::tuple<uint64_t, uint64_t>> temp_stats;
   std::map<int, int> temp_pc_map;
-  uint64_t active_start = 0u;
-  uint64_t elapsed_cycles = 0;
-  uint64_t temp_elapsed_cycles = 0;
 
   // init system
   initialize_system(binary_file, scheme, &stats);
@@ -173,113 +252,64 @@ stats_bundle simulate(char const *binary_file,
   // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
   uint64_t active_periods = 0;
-  double lastTime = 0;
+
   simul_timer simul_timer(scheme->clock_frequency());
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
-    // init stats
 
 
- //   std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
-
+    // std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
+    //TODO::simul_timer needs to keep into to account restore and backup
     if(scheme->is_active(&stats)) {
 
       // system just powered on, start of active period
       if(!was_active) {
           active_periods++;
-          if (active_periods == 5){
+          if (active_periods == 20){
               break;
           }
         std::cout << "Powering on\n";
-        // active period stats
-        stats.models.emplace_back();
-        active_start = stats.cpu.cycle_count;
-        stats.models.back().energy_start = battery.energy_stored();
-
-        if(stats.cpu.instruction_count != 0) {
-          // consume energy for restore
-          auto const restore_time = scheme->restore(&stats);
-          temp_elapsed_cycles += restore_time;
-
-          stats.models.back().time_for_restores += restore_time;
-        }
+        //track the start of a new period
+        track_new_active_period(&stats, scheme);
       }
       was_active = true;
 
       // run one instruction
       auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats);
       simul_timer.active_tick(instruction_ticks);
-      // update stats
-      stats.cpu.instruction_count++;
-      stats.cpu.cycle_count += instruction_ticks;
-      //std::cout << "ticks: " << instruction_ticks << "\n";
-      stats.models.back().time_for_instructions += instruction_ticks;
-      temp_elapsed_cycles += instruction_ticks;
+      // update stats after instruction
+      update_stats_after_instruction(&stats, instruction_ticks);
 
       // consume energy for execution
       scheme->execute_instruction(instruction_ticks,&stats);
 
       // execute backup
       if(scheme->will_backup(&stats)) {
-        // consume energy for backing up
-        stats.recentlyBackedUp = true;
-        stats.deadTasks = 0;
-        auto const backup_time = scheme->backup(&stats);
-        temp_elapsed_cycles += backup_time;
-
-        auto &active_stats = stats.models.back();
-        active_stats.time_for_backups += backup_time;
-        active_stats.energy_forward_progress = active_stats.energy_for_instructions;
-        active_stats.time_forward_progress = stats.cpu.cycle_count - active_start;
+        update_backup_stats(&stats, scheme);
       }
 
       if (simul_timer.harvest_while_active()){
-        auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
-        auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
-        // cap should not harvest if source voltage is higher than cap voltage
-        if (battery.voltage() < env_voltage) {
-           auto battery_energy = battery.harvest_energy(available_energy);
-          // std::cout << "Active_Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
-           stats.system.energy_harvested += battery_energy;
-        }
+        harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
       }
 
     }
 
-    // system off
     else {
       // system was just on, start of off period
       if(was_active) {
         fprintf(stderr,"Turning off at state pc= %X\n",thumbulator::cpu_get_pc() - 0x5);
         update_active_period_stats(&stats, scheme);
-        std::cout << "Active period finished in " << temp_elapsed_cycles << " "<< stats.models.back().time_total << "cycles.\n";
-        temp_elapsed_cycles = 0;
-        // we just powered off
+        std::cout << "Active period finished in " << stats.models.back().time_total << " cycles.\n";
 
-        if (!stats.recentlyBackedUp){
-            stats.deadTasks++;
-
-            if (stats.deadTasks == 2){
-                std::cout << "DEAD TASK! Not progressing" << "\n";
-                break;
-            }
+        if(!making_forward_progress(&stats)){
+          break;
         }
-
-        if (stats.recentlyBackedUp){
-            stats.recentlyBackedUp = false;
-        }
-
 
       }
       was_active = false;
 
-      // harvest energy while off: jump clock to next ms
       simul_timer.inactive_tick();
-      // get voltage based current time
-      auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
-      auto harvested_energy = (env_voltage * env_voltage / 30000) * 0.001;
-      battery.harvest_energy(harvested_energy);
-      stats.system.energy_harvested += harvested_energy;
-      // std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
+
+      harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
 
     }
   }
@@ -290,19 +320,7 @@ stats_bundle simulate(char const *binary_file,
 
   std::cout << "Done simulation\n";
 
-  auto &active_period = stats.models.back();
-  active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
-                             active_period.time_for_restores;
-
-  active_period.energy_consumed = active_period.energy_for_instructions +
-                                  active_period.energy_for_backups +
-                                  active_period.energy_for_restore;
-
-  active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
-  active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
-
-  stats.system.energy_remaining = battery.energy_stored();
-
+  update_final_stats(&stats, scheme, &simul_timer);
   return stats;
 }
 }

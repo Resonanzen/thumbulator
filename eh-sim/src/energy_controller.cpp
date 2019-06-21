@@ -52,8 +52,8 @@ void energyController::run_instruction_and_track_energy(int instruction_ticks) {
     // execute backup
     if(scheme->will_backup(&stats)) {
         // consume energy for backing up
-        stats.recentlyBackedUp = true;
-        stats.deadTasks = 0;
+        stats.recently_backed_up = true;
+        stats.dead_tasks = 0;
         auto const backup_time = scheme->backup(&stats);
         elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;
@@ -103,8 +103,8 @@ void energy_control::run_instruction_and_track_energy(int instruction_ticks, ehs
     // execute backup
     if(scheme->will_backup(&stats)) {
         // consume energy for backing up
-        stats.recentlyBackedUp = true;
-        stats.deadTasks = 0;
+        stats.recently_backed_up= true;
+        stats.dead_tasks = 0;
         auto const backup_time = scheme->backup(&stats);
         elapsed_cycles += backup_time;
         temp_elapsed_cycles += backup_time;

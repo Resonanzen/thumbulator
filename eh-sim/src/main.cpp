@@ -63,7 +63,8 @@ int main(int argc, char *argv[])
       {"tau_B", {"--tau-b"}, "the backup period for the parametric scheme", 1},
       {"binary", {"-b", "--binary"}, "path to application binary", 1},
       {"output", {"-o", "--output"}, "output file", 1,},
-      {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,}}};
+      {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,},
+      {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to Plot", 0}}};
 
 
 
@@ -118,6 +119,9 @@ int main(int argc, char *argv[])
     }
 
     ehsim::voltage_trace power(path_to_voltage_trace, sampling_period);
+
+
+
 
     auto const stats = ehsim::simulate(path_to_binary, power, scheme.get());
 

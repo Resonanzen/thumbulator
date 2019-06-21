@@ -114,6 +114,10 @@ struct active_stats {
   double bytes_application = 0u;
 
   /**
+   The cycle count when an active period starts
+   */
+  uint64_t active_start = 0u;
+  /**
    * Forward progress made as a percentage of total energy used.
    */
   double progress = 0.0;
@@ -170,9 +174,9 @@ struct eh_model_parameters {
 struct stats_bundle {
   system_stats system;
   cpu_stats cpu;
-  int deadTasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
+  int dead_tasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
   bool backup_requested = true;
-  bool recentlyBackedUp = false;
+  bool recently_backed_up= false;
   /**
    * Model of multiple active periods.
    */

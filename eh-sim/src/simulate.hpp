@@ -30,6 +30,7 @@ stats_bundle simulate(char const *binary_file,
 
 
     void update_active_period_stats(ehsim::stats_bundle *stats);
+    void update_backup_stats(ehsim::stats_bundle *stats);
 
 }
 
