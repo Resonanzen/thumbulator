@@ -60,6 +60,11 @@ public:
     return 0;
   }
 
+    void execute_startup_routine()  override
+    {
+
+    }
+
 private:
   capacitor battery;
 };

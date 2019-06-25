@@ -25,6 +25,8 @@ public:
   virtual bool will_backup(stats_bundle *stats) const = 0;
 
   virtual void execute_instruction(uint32_t cycles,stats_bundle *stats) = 0;
+  //startup routine that may be needed for some schemes
+  virtual void execute_startup_routine() = 0;
 
   virtual uint64_t backup(stats_bundle *stats) = 0;
 

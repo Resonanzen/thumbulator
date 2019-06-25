@@ -1,6 +1,7 @@
 #include "thumbulator/memory.hpp"
 
 #include <cstdio>
+#include <bits/unordered_set.h>
 
 #include "cpu_flags.hpp"
 #include "exit.hpp"
@@ -8,6 +9,8 @@
 namespace thumbulator {
 
 uint32_t RAM[RAM_SIZE_BYTES >> 2];
+
+std::unordered_set<uint32_t> used_RAM_addresses;
 
 std::function<uint32_t(uint32_t, uint32_t)> ram_load_hook;
 std::function<uint32_t(uint32_t, uint32_t, uint32_t)> ram_store_hook;
@@ -33,6 +36,7 @@ void ram_store(uint32_t address, uint32_t value)
     value = ram_store_hook(address, old_value, value);
   }
 
+  used_RAM_addresses.insert(address);
   RAM[(address & RAM_ADDRESS_MASK) >> 2] = value;
 }
 

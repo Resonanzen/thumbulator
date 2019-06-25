@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <bits/stdc++.h>
 
 namespace thumbulator {
 
@@ -16,6 +17,7 @@ namespace thumbulator {
  */
 extern uint32_t RAM[RAM_SIZE_ELEMENTS];
 
+extern std::unordered_set<uint32_t> used_RAM_addresses;
 /**
  * Hook into loads to RAM.
  *

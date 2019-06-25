@@ -127,6 +127,11 @@ public:
         PARAMETRIC_SIGMA_R, PARAMETRIC_A_R, PARAMETRIC_OMEGA_B, PARAMETRIC_SIGMA_B, PARAMETRIC_A_B);
   }
 
+    void execute_startup_routine()  override
+    {
+
+    }
+
 private:
   capacitor battery;
   bool active = false;

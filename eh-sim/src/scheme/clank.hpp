@@ -148,6 +148,11 @@ public:
         CLANK_OMEGA_B, CLANK_SIGMA_B, CLANK_A_B);
   }
 
+    void execute_startup_routine()  override
+    {
+
+    }
+
 private:
   capacitor battery;
 

@@ -108,6 +108,9 @@ int main(int argc, char *argv[])
       auto const tau_b = options["tau_B"].as<int>(1000);
       scheme = std::make_unique<ehsim::parametric>(tau_b);
     } else if(scheme_select == "task") {
+
+
+
       if (options["system_frequency"].count() == 0){
         scheme = std::make_unique<ehsim::task_based>();
       }else {

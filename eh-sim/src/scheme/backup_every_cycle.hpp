@@ -107,6 +107,11 @@ public:
         NVP_BEC_OMEGA_B, NVP_BEC_SIGMA_B, NVP_BEC_A_B);
   }
 
+  void execute_startup_routine()  override
+  {
+
+  }
+
 private:
   capacitor battery;
   bool active;

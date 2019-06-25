@@ -57,6 +57,7 @@ constexpr auto NVP_BEC_SIGMA_R = static_cast<double>(NVP_BEC_A_R) / NVP_BEC_REST
 constexpr auto NVP_BEC_OMEGA_R = NVP_BEC_RESTORE_ENERGY / NVP_BEC_A_R;
 
 // see data sheet for STM32L011K4 (M0+) at: http://eembc.org/benchmark/reports/benchreport.php
+//    https://www.st.com/resource/en/datasheet/stm32l011k4.pdf <--st32 datasheet is here
 // Table 22
 constexpr uint32_t CORTEX_M0PLUS_FREQUENCY = 8000000;
 constexpr double CORTEX_M0PLUS_CURRENT = 1.3e-3;

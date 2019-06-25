@@ -97,6 +97,10 @@ public:
     return NVP_ODAB_RESTORE_TIME;
   }
 
+    void execute_startup_routine()  override
+    {
+
+    }
 private:
   capacitor battery;
 

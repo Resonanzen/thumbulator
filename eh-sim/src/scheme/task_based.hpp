@@ -67,12 +67,12 @@ public:
         //not correct..maybe should use CPU cycle
         battery.consume_energy(elapsed_cycles*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE);
 
-        stats->models.back().energy_for_instructions += NVP_INSTRUCTION_ENERGY*elapsed_cycles;
+        stats->models.back().energy_for_instructions += CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE*elapsed_cycles;
     }
 
     bool is_active(stats_bundle *stats) override
     {
-        auto required_energy = 32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + NVP_BEC_BACKUP_ENERGY + NVP_BEC_RESTORE_ENERGY;  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
+        auto required_energy = 32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
         if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
         {
             active = true;
@@ -94,7 +94,12 @@ public:
     uint64_t backup(stats_bundle *stats) override
     {
 
-
+        /*
+         * Assume that this system keeps track of which memory locations are used and which aren't, which means you only need to backup
+         * the RAM addresses that are important for the program.
+         *
+         * This is needed bc the energy needed to backup 8mb of RAM is way higher than the current capacitor's capacity
+         */
 
         //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
         // do not touch arch/app state, assume it is all non-volatile
@@ -107,10 +112,15 @@ public:
         std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
         std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
         backup_ARCHITECTURE = thumbulator::cpu;
-        active_stats.energy_for_backups += NVP_BEC_BACKUP_ENERGY;
-        battery.consume_energy(NVP_BEC_BACKUP_ENERGY);
 
-        return NVP_BEC_BACKUP_TIME;
+        double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
+        std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
+        active_stats.energy_for_backups += energy_for_backup ;
+
+     //   battery.consume_energy(energy_for_backup);
+
+        //return the number of cycles to backup al the used parts of RAM
+        return 1;//(thumbulator::used_RAM_addresses.size())* TIMING_MEM;
     }
 
     uint64_t restore(stats_bundle *stats) override
@@ -135,6 +145,16 @@ public:
                                     NVP_BEC_OMEGA_B, NVP_BEC_SIGMA_B, NVP_BEC_A_B);
     }
 
+    void execute_startup_routine()  override
+    {
+
+        std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
+        std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
+        backup_ARCHITECTURE = thumbulator::cpu;
+    }
+
+
+
 private:
     capacitor battery;
     bool active;
@@ -142,8 +162,10 @@ private:
     uint64_t last_backup_cycle = 0u;
     uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
     uint32_t backup_FLASH[RAM_SIZE_BYTES >>2];
-    thumbulator::cpu_state backup_ARCHITECTURE;
+    thumbulator::cpu_state backup_ARCHITECTURE = thumbulator::cpu;
     uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
+
+    uint64_t ram_bytes_used = 0;
 };
 }
 

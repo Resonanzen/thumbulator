@@ -138,7 +138,7 @@ void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * s
   active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
 }
 
-void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme){
+void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, simul_timer * simul_timer){
   stats->recently_backed_up = true;
   stats->dead_tasks = 0;
   auto const backup_time = scheme->backup(stats);
@@ -146,6 +146,9 @@ void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme){
 
   auto &active_stats = stats->models.back();
   active_stats.time_for_backups += backup_time;
+
+  simul_timer->active_tick(backup_time);
+
   active_stats.energy_forward_progress = active_stats.energy_for_instructions;
   active_stats.time_forward_progress = stats->cpu.cycle_count - active_stats.active_start;
 }
@@ -157,7 +160,7 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
   // cap should not harvest if source voltage is higher than cap voltage
   if (scheme->get_battery().voltage() < env_voltage) {
     auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
-    // std::cout << "Active_Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+     std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
      stats->system.energy_harvested += battery_energy;
   }
 }
@@ -237,6 +240,8 @@ stats_bundle simulate(char const *binary_file,
 
   // init system
   initialize_system(binary_file, scheme, &stats);
+  scheme->execute_startup_routine();
+
 
   // energy harvesting
   auto &battery = scheme->get_battery();
@@ -257,7 +262,7 @@ stats_bundle simulate(char const *binary_file,
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
 
 
-    // std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
+    std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
     //TODO::simul_timer needs to keep into to account restore and backup
     if(scheme->is_active(&stats)) {
 
@@ -284,7 +289,7 @@ stats_bundle simulate(char const *binary_file,
 
       // execute backup
       if(scheme->will_backup(&stats)) {
-        update_backup_stats(&stats, scheme);
+        update_backup_stats(&stats, scheme, &simul_timer);
       }
 
       if (simul_timer.harvest_while_active()){
@@ -309,8 +314,14 @@ stats_bundle simulate(char const *binary_file,
 
       simul_timer.inactive_tick();
 
-      harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
-
+        auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
+        auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
+        // cap should not harvest if source voltage is higher than cap voltage
+        //if (scheme->get_battery().voltage() < env_voltage) {
+            auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
+            std::cout << "Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+            stats.system.energy_harvested += battery_energy;
+        //}
     }
   }
 
