@@ -165,7 +165,7 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
   }
 }
 
-void track_new_active_period(stats_bundle *stats, eh_scheme *scheme){
+void track_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer * simul_timer){
   stats->models.emplace_back();
   stats->models.back().active_start = stats->cpu.cycle_count;
   stats->models.back().energy_start = scheme->get_battery().energy_stored();
@@ -173,7 +173,7 @@ void track_new_active_period(stats_bundle *stats, eh_scheme *scheme){
   if(stats->cpu.instruction_count != 0) {
     // consume energy for restore
     auto const restore_time = scheme->restore(stats);
-
+    simul_timer->active_tick(restore_time);
     stats->models.back().time_for_restores += restore_time;
   }
 }
@@ -274,7 +274,7 @@ stats_bundle simulate(char const *binary_file,
           }
         std::cout << "Powering on\n";
         //track the start of a new period
-        track_new_active_period(&stats, scheme);
+        track_new_active_period(&stats, scheme, &simul_timer);
       }
       was_active = true;
 

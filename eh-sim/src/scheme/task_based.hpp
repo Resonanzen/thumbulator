@@ -72,7 +72,9 @@ public:
 
     bool is_active(stats_bundle *stats) override
     {
-        auto required_energy = 32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
+        //yeah... unsure about required energy
+        //I am just going to use the STM32 minimum operating voltage (1.5V) to set the required energy (datasheet in data_sheet.hpp)
+        auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
         if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
         {
             active = true;
@@ -114,13 +116,13 @@ public:
         backup_ARCHITECTURE = thumbulator::cpu;
 
         double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
-        std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
+        //std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
         active_stats.energy_for_backups += energy_for_backup ;
 
-     //   battery.consume_energy(energy_for_backup);
+        battery.consume_energy(energy_for_backup);
 
         //return the number of cycles to backup al the used parts of RAM
-        return 1;//(thumbulator::used_RAM_addresses.size())* TIMING_MEM;
+        return (thumbulator::used_RAM_addresses.size())* TIMING_MEM;
     }
 
     uint64_t restore(stats_bundle *stats) override
@@ -133,10 +135,12 @@ public:
         std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
         thumbulator::cpu = backup_ARCHITECTURE;
         std::cout << "RESTORE! Restore at PC = "<< thumbulator::cpu_get_pc() -0x5 << "\n";
-        stats->models.back().energy_for_restore = NVP_BEC_RESTORE_ENERGY;
-        battery.consume_energy(NVP_BEC_RESTORE_ENERGY);
 
-        return NVP_BEC_RESTORE_TIME;
+        double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
+        stats->models.back().energy_for_restore = energy_for_restore;
+        battery.consume_energy(energy_for_restore);
+
+        return (thumbulator::used_RAM_addresses.size())*TIMING_MEM;
     }
 
     double estimate_progress(eh_model_parameters const &eh) const override

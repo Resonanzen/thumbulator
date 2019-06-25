@@ -67,6 +67,7 @@ constexpr double CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE =
     (CORTEX_M0PLUS_CURRENT * CORTEX_M0PLUS_VOLTAGE) / CORTEX_M0PLUS_FREQUENCY;
 // Table 43 - energy per byte
 constexpr double CORTEX_M0PLUS_ENERGY_FLASH = 0.7e-6 * 3.6 * 3.94e-3;
+constexpr double CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE = 1.65;
 
 // based on Clank: Architectural Support for Intermittent Computation
 constexpr uint64_t CLANK_BACKUP_ARCH_TIME = 40;
