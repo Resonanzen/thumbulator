@@ -126,7 +126,7 @@ void energy_control::run_instruction_and_track_energy(int instruction_ticks, ehs
         // cap should not harvest if source voltage is higher than cap voltage
         if (scheme->get_battery().voltage() < env_voltage) {
             //auto battery_energy = battery.harvest_energy(available_energy);
-            std::cout << "Active_Harvested_Energy: " << stats.system.time.count()*1E-9 << " "<<available_energy << "\n";
+          //  std::cout << "Active_Harvested_Energy: " << stats.system.time.count()*1E-9 << " "<<available_energy << "\n";
 
             //  stats.system.energy_harvested += battery_energy;
         }
@@ -146,7 +146,7 @@ void energy_control::harvest_while_inactive(ehsim::stats_bundle &stats, ehsim::e
     auto harvested_energy = (env_voltage * env_voltage / 30000) * 0.001;
     scheme->get_battery().harvest_energy(harvested_energy);
     stats.system.energy_harvested += harvested_energy;
-    std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
+    //std::cout << "Harvested_Energy: " << stats.system.time.count() *1E-9<< " "<<harvested_energy << "\n";
     //std::cout << "Powered off. Time (s): " << stats.system.time.count() * 1e-9 << " Current energy (nJ): " << battery.energy_stored() * 1e9 << "\n";
     // temp stat: system time, battery energy
     //temp_stats.emplace_back(std::make_tuple(stats.system.time.count(), battery.energy_stored()*1.e9)); //need to fix this

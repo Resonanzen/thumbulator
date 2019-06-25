@@ -421,6 +421,7 @@ void Blowfish_Init(BLOWFISH_CTX *ctx, unsigned char *key, int keyLen) {
   j = 0;
   for (i = 0; i < N + 2; ++i) {
     data = 0x00000000;
+     __asm__("WFI");
     for (k = 0; k < 4; ++k) {
       data = (data << 8) | key[j];
       j = j + 1;
@@ -434,6 +435,7 @@ void Blowfish_Init(BLOWFISH_CTX *ctx, unsigned char *key, int keyLen) {
   datar = 0x00000000;
 
   for (i = 0; i < N + 2; i += 2) {
+     __asm__("WFI");
     Blowfish_Encrypt(ctx, &datal, &datar);
     ctx->P[i] = datal;
     ctx->P[i + 1] = datar;
@@ -441,6 +443,7 @@ void Blowfish_Init(BLOWFISH_CTX *ctx, unsigned char *key, int keyLen) {
 
   for (i = 0; i < 4; ++i) {
     for (j = 0; j < 256; j += 2) {
+      __asm__("WFI");
       Blowfish_Encrypt(ctx, &datal, &datar);
       ctx->S[i][j] = datal;
       ctx->S[i][j + 1] = datar;

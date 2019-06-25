@@ -4,7 +4,7 @@ TOOLCHAIN = arm-none-eabi
 ARMGNU = $(TC_PATH)/bin/$(TOOLCHAIN)
 CC = $(ARMGNU)-gcc
 CHIP = cortex-m0plus
-OPTLVL = -O0
+OPTLVL = -O3
 
 #FLAGS = -DBARE_METAL -Wall $(OPTLVL) -target $(TOOLCHAIN) -mcpu=$(CHIP) -mthumb --specs=nosys.specs -nostartfiles -ffreestanding -std=c99 -fomit-frame-pointer -fno-optimize-sibling-calls #-static
 FLAGS = -DBARE_METAL -Wall $(OPTLVL) -march=armv6-m -mcpu=$(CHIP) -mthumb -msoft-float --specs=nosys.specs -nostartfiles -ffreestanding -std=c99 -fomit-frame-pointer -fno-optimize-sibling-calls

@@ -55,8 +55,8 @@ int main(void)
     start = clock();
     
     for (j = n = 0, seed = rand(); j < iterations; j++, seed += 13)
-	 n += pBitCntFunc[i](seed);
-    
+	__asm__("WFI");	 
+	n += pBitCntFunc[i](seed);    	 
     stop = clock();
     ct = (stop - start) / (double)CLOCKS_PER_SEC;
     if (ct < cmin) {
@@ -80,6 +80,7 @@ static int CDECL bit_shifter(long int x)
   int i, n;
   
   for (i = n = 0; x && (i < (sizeof(long) * CHAR_BIT)); ++i, x >>= 1)
-    n += (int)(x & 1L);
+	__asm__("WFI");    
+	n += (int)(x & 1L);
   return n;
 }

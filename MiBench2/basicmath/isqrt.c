@@ -49,9 +49,10 @@ void usqrt(unsigned long x, struct int_sqrt *q)
       unsigned long e = 0L;                   /* trial product    */
 
       int i;
-
+	
       for (i = 0; i < BITSPERLONG; i++)   /* NOTE 1 */
       {
+	    __asm__("WFI");
             r = (r << 2) + TOP2BITS(x); x <<= 2; /* NOTE 2 */
             a <<= 1;
             e = (a << 1) + 1;

@@ -26,7 +26,7 @@ unsigned char KEY[] = "1234567890abcdeffedcba0987654321";
 int main(void) {
   unsigned long L = 1, R = 2;
   BLOWFISH_CTX ctx;
-
+   __asm__("WFI");
   Blowfish_Init (&ctx, (unsigned char*)"TESTKEY", 7);
 
   Blowfish_Encrypt(&ctx, &L, &R);
@@ -47,6 +47,7 @@ int main(void) {
 
   unsigned long * plaintextPtr = (unsigned long *)test_data;
   while(plaintextPtr < (unsigned long *)(test_data + sizeof(test_data))) {
+      __asm__("WFI");
       Blowfish_Encrypt(&ctx, &plaintextPtr[0], &plaintextPtr[1]);
       printf("%08lX %08lX\n", plaintextPtr[0], plaintextPtr[1]);
       plaintextPtr += 2;

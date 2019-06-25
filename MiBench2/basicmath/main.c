@@ -45,10 +45,10 @@ int main(void)
     printf(" %f",x[i]);
   printf("\n\r");
   /* Now solve some random equations */
-  for(a1=1;a1<10;a1++) {
-    for(b1=10;b1>0;b1--) {
-      for(c1=5;c1<15;c1+=0.5) {
-	for(d1=-1;d1>-11;d1--) {
+  for(a1=1;a1<2;a1++) {
+    for(b1=10;b1>3;b1--) {
+      for(c1=5;c1<6;c1+=0.5) {
+	for(d1=-1;d1>-3;d1--) {
 	  __asm__("WFI");
 	  SolveCubic(a1, b1, c1, d1, &solutions, x);  
 	  printf("Solutions:");
@@ -62,7 +62,7 @@ int main(void)
   __asm__("WFI");
   printf("********* INTEGER SQR ROOTS ***********\n\r");
   /* perform some integer square roots */
-  for (i = 0; i < 1001; ++i)
+  for (i = 0; i < 101; ++i)
     {
       usqrt(i, &q);
 			// remainder differs on some machines
@@ -77,9 +77,12 @@ int main(void)
 
   printf("********* ANGLE CONVERSION ***********\n\r");
   /* convert some rads to degrees */
-  for (X = 0.0; X <= 360.0; X += 1.0)
+	int aba;  
+for (X = 0.0; X <= 360.0; X += 1.0){
     printf("%3.0f degrees = %.12f radians\n\r", X, deg2rad(X));
-  printf("\n\r");
+    __asm__("WFI");
+     aba = deg2rad(X);
+ }printf("\n\r");
   for (X = 0.0; X <= (2 * PI + 1e-6); X += (PI / 180))
     printf("%.12f radians = %3.0f degrees\n\r", X, rad2deg(X));
     

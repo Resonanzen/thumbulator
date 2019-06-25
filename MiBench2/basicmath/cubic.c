@@ -22,7 +22,7 @@ void SolveCubic(double  a,
       double    R2_Q3 = R*R - Q*Q*Q;
 	 
       double    theta;
-	__asm__("WFI");
+
       if (R2_Q3 <= 0)
       {
             *solutions = 3;

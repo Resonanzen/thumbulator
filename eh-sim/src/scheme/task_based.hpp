@@ -74,6 +74,7 @@ public:
     {
         //yeah... unsure about required energy
         //I am just going to use the STM32 minimum operating voltage (1.5V) to set the required energy (datasheet in data_sheet.hpp)
+        //this is still bad bc our ENERGY/cycle calculations assumes that the voltage across the CPU is constant
         auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
         if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
         {

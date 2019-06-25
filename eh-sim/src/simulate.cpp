@@ -8,6 +8,7 @@
 #include "stats.hpp"
 #include "voltage_trace.hpp"
 #include "simul_timer.h"
+#include "task_history.h"
 #include <typeinfo>
 #include <cstring>
 #include <iostream>
@@ -77,6 +78,7 @@ uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bun
   if(instruction == 0xBF30){
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
       stats->backup_requested = true;
+
   }else{
       // decode
       stats->backup_requested = false;
@@ -160,7 +162,7 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
   // cap should not harvest if source voltage is higher than cap voltage
   if (scheme->get_battery().voltage() < env_voltage) {
     auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
-     std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+   //  std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
      stats->system.energy_harvested += battery_energy;
   }
 }
@@ -258,20 +260,22 @@ stats_bundle simulate(char const *binary_file,
   std::cout << "Starting simulation\n";
   uint64_t active_periods = 0;
 
+  task_history taskHistory();
+
   simul_timer simul_timer(scheme->clock_frequency());
   while(!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
 
 
-    std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
+   // std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
     //TODO::simul_timer needs to keep into to account restore and backup
     if(scheme->is_active(&stats)) {
 
       // system just powered on, start of active period
       if(!was_active) {
           active_periods++;
-          if (active_periods == 20){
-              break;
-          }
+//          if (active_periods == 20){
+//              break;
+//          }
         std::cout << "Powering on\n";
         //track the start of a new period
         track_new_active_period(&stats, scheme, &simul_timer);
@@ -319,7 +323,7 @@ stats_bundle simulate(char const *binary_file,
         // cap should not harvest if source voltage is higher than cap voltage
         //if (scheme->get_battery().voltage() < env_voltage) {
             auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
-            std::cout << "Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+         //   std::cout << "Harvested_Energy: " << simul_timer.current_system_time().count()*1E-9 << " "<<available_energy << "\n";
             stats.system.energy_harvested += battery_energy;
         //}
     }
