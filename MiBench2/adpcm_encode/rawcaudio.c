@@ -26,7 +26,7 @@ int main() {
         n = (testN <= maxN) ? NINC : maxN - bytesIntoRead;
 
         if ( n == 0 ) break;
-	
+	__asm__("WFI");
         adpcm_coder(currentN, abuf, n/2, &state);
         currentN = test_data + bytesIntoRead + n;
         //write(1, abuf, n/4);

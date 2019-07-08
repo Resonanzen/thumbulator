@@ -29,7 +29,7 @@ int old_main() {
 	float *ImagOut;
 	float *coeff;
 	float *amp;
-
+__asm__("WFI");	 
 		
  srand(1);
 
@@ -52,6 +52,7 @@ int old_main() {
 	 RealIn[i]=0;
 	 for(j=0;j<MAXWAVES;j++) 
 	 {
+__asm__("WFI");	 
 		 /* randomly select sin or cos */
 		 if (rand()%2)
 		 {

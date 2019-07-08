@@ -46,12 +46,14 @@ unsigned short limit_test ( void )
     unsigned short ra;
     short sa;
 
-    for(ra=0;;ra++) if(ult(ra,7)==0) break;
+    for(ra=0;;ra++) __asm__("WFI");	if(ult(ra,7)==0) break;
+
     hexstring(ra);
     if(ra!=7) return(1);
 
     for(ra=0xF000;;ra++) if(ult(ra,0xF007)==0) break;
     hexstring(ra);
+__asm__("WFI");	 
     if(ra!=0xF007) return(1);
 
     for(sa=-7;;sa++) if(slt(sa,7)==0) break;
@@ -62,7 +64,7 @@ unsigned short limit_test ( void )
     hexstring(sa);
     if(sa!=-7) return(1);
 
-    for(ra=0;;ra++) if(ulte(ra,7)==0) break;
+    for(ra=0;;ra++)__asm__("WFI");	  if(ulte(ra,7)==0) break;
     hexstring(ra);
     if(ra!=8) return(1);
 
@@ -70,15 +72,15 @@ unsigned short limit_test ( void )
     hexstring(ra);
     if(ra!=0xF008) return(1);
 
-    for(ra=0xF000;;ra++) if(ulte(ra,7)==0) break;
+    for(ra=0xF000;;ra++) __asm__("WFI");	 if(ulte(ra,7)==0) break;
     hexstring(ra);
     if(ra!=0xF000) return(1);
 
-    for(sa=-7;;sa++) if(slte(sa,7)==0) break;
+    for(sa=-7;;sa++) __asm__("WFI");	 if(slte(sa,7)==0) break;
     hexstring(sa);
     if(sa!=8) return(1);
 
-    for(sa=-17;;sa++) if(slte(sa,-7)==0) break;
+    for(sa=-17;;sa++) __asm__("WFI");	  if(slte(sa,-7)==0) break;
     hexstring(sa);
     if(sa!=-6) return(1);
 
@@ -86,15 +88,15 @@ unsigned short limit_test ( void )
     hexstring(ra);
     if(ra!=8) return(1);
 
-    for(ra=0xF000;;ra++) if(ugt(ra,0xF007)) break;
+    for(ra=0xF000;;ra++) __asm__("WFI");	 if(ugt(ra,0xF007)) break;
     hexstring(ra);
     if(ra!=0xF008) return(1);
 
-    for(ra=0;;ra++) if(ugte(ra,7)) break;
+    for(ra=0;;ra++) __asm__("WFI");	 if(ugte(ra,7)) break;
     hexstring(ra);
     if(ra!=7) return(1);
 
-    for(ra=0xF000;;ra++) if(ugte(ra,0xF007)) break;
+    for(ra=0xF000;;ra++) __asm__("WFI");	  if(ugte(ra,0xF007)) break;
     hexstring(ra);
     if(ra!=0xF007) return(1);
 

@@ -62,6 +62,7 @@ void hexstringcr ( unsigned int d )
 
 int main ( void )
 {
+__asm__("WFI");	 
     uart_init();
     run_tea_test();
     return(0);

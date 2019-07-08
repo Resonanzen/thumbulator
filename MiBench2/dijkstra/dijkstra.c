@@ -97,7 +97,7 @@ int dijkstra(int chStart, int chEnd)
 {
   
 
-  __asm__("WFI");
+  
   for (ch = 0; ch < NUM_NODES; ch++)
     {
       rgnNodes[ch].iDist = NONE;
@@ -117,6 +117,7 @@ int dijkstra(int chStart, int chEnd)
       
      while (qcount() > 0)
 	{
+	__asm__("WFI");
 	  dequeue (&iNode, &iDist, &iPrev);
 	  for (i = 0; i < NUM_NODES; i++)
 	    {

@@ -19,31 +19,7 @@ int main(void)
   struct int_sqrt q;
   
   /* solve soem cubic functions */
-  __asm__("WFI");
-  printf("********* CUBIC FUNCTIONS ***********\n\r");
-  /* should get 3 solutions: 2, 6 & 2.5   */
-  SolveCubic(a1, b1, c1, d1, &solutions, x);  
-  printf("Solutions:");
-  for(i=0;i<solutions;i++)
-    printf(" %f",x[i]);
-  printf("\n\r");
-  /* should get 1 solution: 2.5           */
-  SolveCubic(a2, b2, c2, d2, &solutions, x);  
-  printf("Solutions:");
-  for(i=0;i<solutions;i++)
-    printf(" %f",x[i]);
-  printf("\n\r");
-  SolveCubic(a3, b3, c3, d3, &solutions, x);
-  printf("Solutions:");
-  __asm__("WFI");
-  for(i=0;i<solutions;i++)
-    printf(" %f",x[i]);
-  printf("\n\r");
-  SolveCubic(a4, b4, c4, d4, &solutions, x);
-  printf("Solutions:");
-  for(i=0;i<solutions;i++)
-    printf(" %f",x[i]);
-  printf("\n\r");
+ 
   /* Now solve some random equations */
   for(a1=1;a1<2;a1++) {
     for(b1=10;b1>3;b1--) {
@@ -59,13 +35,13 @@ int main(void)
       }
     }
   }
-  __asm__("WFI");
+
   printf("********* INTEGER SQR ROOTS ***********\n\r");
   /* perform some integer square roots */
   for (i = 0; i < 101; ++i)
     {
       usqrt(i, &q);
-			// remainder differs on some machines
+    	__asm__("WFI");		// remainder differs on some machines
      // printf("sqrt(%3d) = %2d, remainder = %2d\n\r",
      printf("sqrt(%3d) = %2d\n\r",
 	     i, q.sqrt);
@@ -81,9 +57,10 @@ int main(void)
 for (X = 0.0; X <= 360.0; X += 1.0){
     printf("%3.0f degrees = %.12f radians\n\r", X, deg2rad(X));
     __asm__("WFI");
-     aba = deg2rad(X);
+     
  }printf("\n\r");
   for (X = 0.0; X <= (2 * PI + 1e-6); X += (PI / 180))
+	__asm__("WFI");
     printf("%.12f radians = %3.0f degrees\n\r", X, rad2deg(X));
     
   return 0;

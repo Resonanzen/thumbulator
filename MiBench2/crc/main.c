@@ -23,7 +23,7 @@ int
 main(void)
 {
 	unsigned char  test[] = "123456789";
-
+__asm__("WFI");	 
 
 	/*
 	 * Print the check value for the selected CRC algorithm.
@@ -35,7 +35,7 @@ main(void)
 	 */
 	printf("The crcSlow() of \"123456789\" is 0x%X\n", crcSlow(test, strlen(test)));
   crcSlow(test,9);
-	
+	__asm__("WFI");	 
 	/*
 	 * Compute the CRC of the test message, more efficiently.
 	 */

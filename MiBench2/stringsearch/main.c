@@ -1700,6 +1700,7 @@ NULL};
       {
       for (i = 0; find_strings[i]; i++)
       {
+__asm__("WFI");	 
             init_search(find_strings[i]);
             here = strsearch(search_strings[i]);
             printf("\"%s\" is%s in \"%s\"", find_strings[i],

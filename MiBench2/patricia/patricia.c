@@ -71,6 +71,7 @@ insertR(struct ptree *h, struct ptree *n, int d, struct ptree *p)
 		n->p_right = bit(d, n->p_key) ? n : h;
 		return n;
 	}
+__asm__("WFI");	 
 
 	if (bit(h->p_b, n->p_key))
 		h->p_right = insertR(h->p_right, n, d, h);
@@ -142,6 +143,7 @@ pat_insert(struct ptree *n, struct ptree *head)
 		 */
 		copied = 0;
 		for (i=0, pm=buf; i < t->p_mlen; pm++) {
+__asm__("WFI");	 
 			if (n->p_m->pm_mask > t->p_m[i].pm_mask) {
 				bcopy(t->p_m + i, pm, sizeof(struct ptree_mask));
 				i++;
@@ -293,6 +295,7 @@ pat_remove(struct ptree *n, struct ptree *head)
 	       sizeof(struct ptree_mask)*(t->p_mlen-1));
 
 	for (i=0, pm=buf; i < t->p_mlen; i++) {
+__asm__("WFI");	 
 		if (n->p_m->pm_mask != t->p_m[i].pm_mask) {
 			bcopy(t->p_m + i, pm++, sizeof(struct ptree_mask));
 		}

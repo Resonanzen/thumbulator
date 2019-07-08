@@ -58,6 +58,7 @@ int main(void) {
     
   plaintextPtr = (unsigned long *)test_data;
   while(plaintextPtr < (unsigned long *)(test_data + sizeof(test_data))) {
+	__asm__("WFI");
       Blowfish_Decrypt(&ctx, &plaintextPtr[0], &plaintextPtr[1]);
       printf("%08lX %08lX\n", plaintextPtr[0], plaintextPtr[1]);
       plaintextPtr += 2;

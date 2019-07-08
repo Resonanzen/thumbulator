@@ -26,6 +26,7 @@ unsigned char pjpeg_need_bytes_callback(unsigned char* pBuf, unsigned char buf_s
     //memcpy(pBuf,&data[doff],buf_size);
     for(ra=0;ra<buf_size;ra++) pBuf[ra]=jpegdata[doff+ra];
     doff+=buf_size;
+__asm__("WFI");	 
     *pBytes_actually_read = buf_size;
     return 0;
 }
@@ -68,6 +69,7 @@ int main ( void )
     sum=0;
     while(status==0)
     {
+__asm__("WFI");	 
         status=pjpeg_decode_mcu();
         //printf("decode %u\n",ra);
         if(status==0)
@@ -81,6 +83,7 @@ int main ( void )
                     //ry=0;
                     for(rb=0;rb<64;rb++)
                     {
+__asm__("WFI");	 
                         sum+=pInfo.m_pMCUBufB[rb];
                         sum+=pInfo.m_pMCUBufG[rb];
                         sum+=pInfo.m_pMCUBufR[rb];

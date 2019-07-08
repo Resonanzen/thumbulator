@@ -13,6 +13,7 @@ void PUT32 ( unsigned int, unsigned int);
 //------------------------------------------------------------------------
 void uart_send ( unsigned int c )
 {
+__asm__("WFI");	 
     PUT32(THUL_UART_BASE+0x0,c);
 }
 //------------------------------------------------------------------------
@@ -32,9 +33,10 @@ int main ( void )
     unsigned int rc;
     unsigned int rd;
     unsigned int re;
-
+__asm__("WFI");	 
 
     uart_send(0x0D);
+__asm__("WFI");	 
     uart_send(0x0A);
     uart_send(0x0A);
 
@@ -44,7 +46,7 @@ int main ( void )
     for(ra=0;ra<4;ra++)
     {
         for(rb=0;rb<4;rb++)
-        {
+        {	__asm__("WFI");	 
             rc=atest(ra<<30,rb<<30);
             show_op(ra);
             show_op(rb);
@@ -71,6 +73,7 @@ int main ( void )
     {
         for(rb=0;rb<4;rb++)
         {
+	__asm__("WFI");	 
             rc=stest(ra<<30,rb<<30);
             show_op(ra);
             show_op(rb);

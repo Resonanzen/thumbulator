@@ -74,6 +74,7 @@ inet_aton(const char *cp, struct in_addr *addr)
     
     c = *cp;
     for (;;) {
+__asm__("WFI");	 
         /*
          * Collect number up to ``.''.
          * Values are specified as for C:
@@ -214,7 +215,7 @@ main()
 	 */
     fakeFile = input_data;
 	while (fakeFile < (input_data + sizeof(input_data)/sizeof(struct input_data_format))) {
-		/*
+	__asm__("WFI");	 	/*
 		 * Read in each IP address and mask and convert them to
 		 * more usable formats.
 		 */

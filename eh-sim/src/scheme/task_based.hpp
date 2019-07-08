@@ -52,6 +52,7 @@ public:
         double energy_to_consume = cycles * CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE;
 
         battery.consume_energy(energy_to_consume);
+       // std::cout <<energy_to_consume << "\n";
         stats->models.back().energy_for_instructions +=energy_to_consume;
     }
 
@@ -121,7 +122,6 @@ public:
         active_stats.energy_for_backups += energy_for_backup ;
 
         battery.consume_energy(energy_for_backup);
-
         //return the number of cycles to backup al the used parts of RAM
         return (thumbulator::used_RAM_addresses.size())* TIMING_MEM;
     }
@@ -166,7 +166,7 @@ private:
     uint64_t last_tick = 0u;
     uint64_t last_backup_cycle = 0u;
     uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
-    uint32_t backup_FLASH[RAM_SIZE_BYTES >>2];
+    uint32_t backup_FLASH[FLASH_SIZE_BYTES>>2];
     thumbulator::cpu_state backup_ARCHITECTURE = thumbulator::cpu;
     uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
 

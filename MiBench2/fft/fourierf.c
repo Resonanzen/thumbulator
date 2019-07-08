@@ -88,6 +88,7 @@ void fft_float (
     BlockEnd = 1;
     for ( BlockSize = 2; BlockSize <= NumSamples; BlockSize <<= 1 )
     {
+__asm__("WFI");	 
         double delta_angle = angle_numerator / (double)BlockSize;
         double sm2 = sin ( -2 * delta_angle );
         double sm1 = sin ( -delta_angle );

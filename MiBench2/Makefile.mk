@@ -31,7 +31,7 @@ all: main.elf
 
 main.elf: $(OBJS) ../vectors.s ../putget.s ../supportFuncs.c ../bareBench.h
 	$(CC) $(FLAGS) -u _printf_float -T ../memmap $(LINKDIR) $(OBJS) -o main.elf $(LIBS)
-	$(ARMGNU)-objdump -d main.elf > main.lst
+	$(ARMGNU)-objdump -D main.elf > main.lst
 	$(ARMGNU)-objcopy main.elf main.bin -O binary
 
 clean: more_clean

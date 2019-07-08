@@ -43,7 +43,7 @@ static void sha_transform(SHA_INFO *sha_info)
     for (i = 0; i < 16; ++i) {
 	W[i] = sha_info->data[i];
     }
-    for (i = 16; i < 80; ++i) {
+    for (i = 16; i < 80; ++i) {__asm__("WFI");	 
 	W[i] = W[i-3] ^ W[i-8] ^ W[i-14] ^ W[i-16];
 #ifdef USE_MODIFIED_SHA
 	W[i] = ROT32(W[i], 1);
@@ -144,6 +144,7 @@ void sha_update(SHA_INFO *sha_info, BYTE *buffer, int count)
     sha_info->count_lo += (LONG) count << 3;
     sha_info->count_hi += (LONG) count >> 29;
     while (count >= SHA_BLOCKSIZE) {
+__asm__("WFI");	 
 	memcpy(sha_info->data, buffer, SHA_BLOCKSIZE);
 #ifdef LITTLE_ENDIAN
 	byte_reverse(sha_info->data, SHA_BLOCKSIZE);
@@ -197,6 +198,7 @@ void sha_stream(SHA_INFO *sha_info, char *fin)
     
     while((data[0] = fin[i]) != '\0')
     {
+__asm__("WFI");	 
       sha_update(sha_info, data, 1);
       ++i;
     }

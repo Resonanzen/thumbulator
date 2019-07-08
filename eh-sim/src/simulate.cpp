@@ -297,7 +297,7 @@ stats_bundle simulate(char const *binary_file,
       }
 
       if (simul_timer.harvest_while_active()) {
-        harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
+          harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
       }
 
     } else {

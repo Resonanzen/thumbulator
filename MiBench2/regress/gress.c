@@ -43,6 +43,7 @@ int regression ( void )
     sum=0;
     for(rb=0;rb<5000;rb++)
     {
+	__asm__("WFI");	 
         prand=prand32(prand);
         rc=ROR(prand,rb);
         //PUT32(0xD0000000,rc);
@@ -53,6 +54,7 @@ int regression ( void )
     }
     for(rb=0;rb<5000;rb++)
     {
+	__asm__("WFI");	 
         prand=prand32(prand);
         rc=LSR(prand,rb);
         sum+=rc;
@@ -61,6 +63,7 @@ int regression ( void )
     }
     for(rb=0;rb<5000;rb++)
     {
+__asm__("WFI");	 
         prand=prand32(prand);
         rc=LSL(prand,rb);
         sum+=rc;

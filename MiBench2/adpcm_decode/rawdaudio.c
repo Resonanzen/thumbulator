@@ -21,6 +21,7 @@ int main() {
     printf("Initial valprev=%d, index=%d\n", state.valprev, state.index);
     
     while(1) {
+	__asm__("WFI");
         int bytesIntoRead = ((unsigned int)currentN) - ((unsigned int)test_data);
         int testN = bytesIntoRead + NINC;
         n = (testN <= maxN) ? NINC : maxN - bytesIntoRead;

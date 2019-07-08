@@ -551,11 +551,13 @@ void divide_mp_elements(uint16_t * q, uint16_t * r, uint16_t * x_in, int n,
     mult_by_power_of_b(_tmpglobal_ybnt, n, y, t, n - t);
 	
     while (1 == compare_mp_elements(_tmpglobal_x, _tmpglobal_ybnt, (int) n)) {
+__asm__("WFI");	 
         q[n - t] = q[n - t] + 1;
         subtract_mp_elements(_tmpglobal_x, _tmpglobal_x, _tmpglobal_ybnt, n);
     }
     //3)
     for (i = n - 1; i > t - 1; i--) { //<--- check index here
+__asm__("WFI");	 
         temp = _tmpglobal_x[i] - y[t - 1];
         //3.1)
         if (0 == temp) {
@@ -652,6 +654,7 @@ int main (void) {
     int cnt;
     printf("Plaintext:\n\r");
     for(cnt = 0; cnt < KEYLEN; ++cnt)
+	__asm__("WFI");	 
       printf("0x%08X\n\r", plaintext[cnt]);
 
     test_rsa_encrypt();

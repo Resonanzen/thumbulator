@@ -105,8 +105,10 @@ void load(uint32_t address, uint32_t *value, uint32_t false_read)
 
 void store(uint32_t address, uint32_t value)
 {
+ //   std::cout <<std::hex << address << "\n";
   if(address >= RAM_START) {
-    if(address >= (RAM_START + RAM_SIZE_BYTES)) {
+
+      if(address >= (RAM_START + RAM_SIZE_BYTES)) {
       // Check for UART
       if(address == 0xE0000000) {
         return;

@@ -117,6 +117,7 @@ int run_tea_test ( void )
 {
     unsigned int errors;
     int ra;
+__asm__("WFI");	 
 
     unsigned char mykey[] =
     {
@@ -148,6 +149,7 @@ int run_tea_test ( void )
 
     for(ra=0;ra<TESTDATALEN;ra++)
     {
+__asm__("WFI");	 
         if(udata[ra]!=testdata[ra])
         {
             errors++;

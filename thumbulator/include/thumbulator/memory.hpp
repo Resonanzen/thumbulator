@@ -8,7 +8,7 @@
 namespace thumbulator {
 
 #define RAM_START 0x40000000
-#define RAM_SIZE_BYTES (1 << 23) // 8 MB
+#define RAM_SIZE_BYTES (1 << 23)//0x0080000 (1 << 23) // 8 MB
 #define RAM_SIZE_ELEMENTS (RAM_SIZE_BYTES >> 2)
 #define RAM_ADDRESS_MASK (((~0) << 23) ^ (~0))
 

@@ -701,6 +701,7 @@ TOTAL_TYPE total;
   {
     for (j=mask_size;j<x_size-mask_size;j++)
     {
+__asm__("WFI");	 
       area = 0;
       total = 0;
       dpt = dp;
@@ -709,6 +710,7 @@ TOTAL_TYPE total;
       cp = bp + centre;
       for(y=-mask_size; y<=mask_size; y++)
       {
+__asm__("WFI");	 
         for(x=-mask_size; x<=mask_size; x++)
 	{
           brightness = *ip++;
@@ -736,6 +738,7 @@ TOTAL_TYPE total;
   {
     for (j=1;j<x_size-1;j++)
     {
+__asm__("WFI");	 
       area = 0;
       total = 0;
       ip = in + ((i-1)*x_size) + j - 1;
@@ -826,6 +829,7 @@ uchar *mp;
 
   for (i=4;i<y_size-4;i++)
     for (j=4;j<x_size-4;j++)
+__asm__("WFI");	 
       if (mid[i*x_size+j]<8)
       {
         centre = r[i*x_size+j];
@@ -1275,6 +1279,7 @@ uchar c,*p,*cp;
   for (i=1;i<y_size-1;i++)
     for (j=1;j<x_size-1;j++)
     {
+__asm__("WFI");	 
       n=100;
       p=in + (i-1)*x_size + j - 1;
       cp=bp + in[i*x_size+j];
@@ -1440,6 +1445,7 @@ uchar c,*p,*cp;
 
   for (i=5;i<y_size-5;i++)
     for (j=5;j<x_size-5;j++) {
+__asm__("WFI");	 
         n=100;
         p=in + (i-3)*x_size + j - 1;
         cp=bp + in[i*x_size+j];
@@ -1718,6 +1724,7 @@ uchar *p,*cp;
 
   for (i=7;i<y_size-7;i++)
     for (j=7;j<x_size-7;j++) {
+__asm__("WFI");	 
         n=100;
         p=in + (i-3)*x_size + j - 1;
         cp=bp + in[i*x_size+j];
@@ -1945,6 +1952,7 @@ CORNER_LIST corner_list;
     
   while (argindex < argc)
   {
+__asm__("WFI");	 
     tcp = argv[argindex];
     if (*tcp == '-')
       switch (*++tcp)

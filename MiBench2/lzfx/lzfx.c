@@ -116,7 +116,7 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
     hval = LZFX_FRST(ip);
 
     while(ip + 2 < in_end){   /* The NEXT macro reads 2 bytes ahead */
-
+	__asm__("WFI");	 
         hval = LZFX_NEXT(hval, ip);
         hslot = htab + LZFX_IDX(hval);
 
@@ -227,7 +227,7 @@ int lzfx_decompress(const void* ibuf, unsigned int ilen,
 
     do {
         unsigned int ctrl = *ip++;
-
+	__asm__("WFI");	 
         /* Format 000LLLLL: a literal byte string follows, of length L+1 */
         if(ctrl < (1 << 5)) {
 
@@ -308,7 +308,7 @@ int main ( void )
 
     unsigned int ra;
     unsigned int rb;
-
+__asm__("WFI");	 
     def_len=sizeof(def_data);
     ret=lzfx_compress(test_data,TEST_DATA_LEN,def_data,&def_len);
 
