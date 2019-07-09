@@ -29,7 +29,11 @@ void load_program(char const *file_name)
       sizeof(thumbulator::FLASH_MEMORY) / sizeof(uint32_t), fd);
   std::fclose(fd);
 }
-
+/**
+ * Initialize system
+ *
+ * @return void
+ */
 void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundle* stats)
 {
   // Reset memory, then load program to memory
@@ -37,6 +41,8 @@ void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundl
   std::memset(thumbulator::FLASH_MEMORY, 0, sizeof(thumbulator::FLASH_MEMORY));
   load_program(binary_file);
 
+
+  scheme->execute_startup_routine();
   // Initialize CPU state
   thumbulator::cpu_reset();
 
@@ -50,31 +56,28 @@ void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundl
 
 /**
  * Execute one instruction.
- *
+ *ADD MOREDSFSD
  * @return Number of cycles to execute that instruction.
  */
-uint32_t step_cpu(std::map<int, int> &temp_pc_map, eh_scheme * scheme, stats_bundle *stats, task_history_tracker *task_history_tracker)
+uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker *task_history_tracker)
 {
   thumbulator::BRANCH_WAS_TAKEN = false;
 
   if((thumbulator::cpu_get_pc() & 0x1) == 0) {
     printf("Oh no! Current PC: 0x%08X\n", thumbulator::cpu.gpr[15]);
-    printf("Did you remember to add at least a single backup instruction (__asm__(\"WFI\"))? The system needs to fall back "
-           "onto something\n");
 
     throw std::runtime_error("PC moved out of thumb mode.");
   }
 
   // store current pc
   auto current_pc = thumbulator::cpu_get_pc();
-  temp_pc_map[current_pc]++;
 
   uint32_t instruction_ticks = 0;
     // fetch
     uint16_t instruction;
     thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
 
-   //std::cout <<  typeid(*scheme).name();
+  //handling backup signal (WFI)
   if(instruction == 0xBF30){
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
       task_history_tracker ->update_task_history(thumbulator::cpu_get_pc()-0x5, stats);
@@ -140,7 +143,7 @@ void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * s
           active_period.energy_forward_progress / active_period.energy_consumed;
   active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
 }
-
+//TODO: put scheme->backup outside
 void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, simul_timer * simul_timer){
   stats->recently_backed_up = true;
   stats->dead_tasks = 0;
@@ -156,10 +159,10 @@ void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, 
   active_stats.time_forward_progress = stats->cpu.cycle_count - active_stats.active_start;
 }
 
-
+//TODO:: Make a charging graph curve the right way
 void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_trace power, ehsim::stats_bundle *stats, eh_scheme *scheme){
   auto env_voltage = power.get_voltage(to_milliseconds(simul_timer->current_system_time()));
-  auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;
+  auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;//0.001 is a microsecond //using 30kOhm resistor
   // cap should not harvest if source voltage is higher than cap voltage
   //if (scheme->get_battery().voltage() < env_voltage) {
     auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
@@ -167,7 +170,7 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
      stats->system.energy_harvested += battery_energy;
   //}
 }
-
+//TODO:: rename
 void track_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer * simul_timer){
   stats->models.emplace_back();
   stats->models.back().active_start = stats->cpu.cycle_count;
@@ -230,52 +233,43 @@ bool making_forward_progress(stats_bundle *stats){
 
 stats_bundle simulate(char const *binary_file,
     ehsim::voltage_trace const &power,
-    eh_scheme *scheme) {
+    eh_scheme *scheme, bool full_sim, uint64_t active_periods_to_simulate) {
   using namespace std::chrono_literals;
 
 
   // init stats
   stats_bundle stats{};
   stats.system.time = 0ns;
-  std::vector<std::tuple<uint64_t, uint64_t>> temp_stats;
-  std::map<int, int> temp_pc_map;
+  int64_t active_periods = 0;
+  simul_timer simul_timer(scheme->clock_frequency());
+  task_history_tracker task_history_tracker;
+  std::map<double,double> energy_time_map;
 
   // init system
   initialize_system(binary_file, scheme, &stats);
-  scheme->execute_startup_routine();
+    auto was_active = false;
 
 
-  // energy harvesting
-  auto &battery = scheme->get_battery();
-  auto was_active = false;
-
-  // frequency in Hz, sample period in ms
-  auto cycles_per_sample = static_cast<uint64_t>(
-          scheme->clock_frequency() * std::chrono::duration<double>(power.sample_period()).count());
   std::cout.setf(std::ios::unitbuf);
-  std::cout << "cycles per sample: " << cycles_per_sample << "\n";
-
   // Execute the program
-  // Simulation will terminate when it executes insn == 0xBFAA
   std::cout << "Starting simulation\n";
-  uint64_t active_periods = 0;
+  // Simulation will terminate when it executes insn == 0xBFAA
 
-  task_history_tracker task_history_tracker;
 
-  simul_timer simul_timer(scheme->clock_frequency());
   while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
 
 
-    // std::cout << "Time/Energy: " << simul_timer.current_system_time().count() * 1E-9 << " "<< scheme->get_battery().energy_stored() << " " << "\n";
-    //TODO::simul_timer needs to keep into to account restore and backup
+
+    energy_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().energy_stored()});
+
     if (scheme->is_active(&stats)) {
 
       // system just powered on, start of active period
       if (!was_active) {
         active_periods++;
-//          if (active_periods == 20){
-//              break;
-//          }
+          if (active_periods == active_periods_to_simulate && !full_sim){
+              break;
+          }
         std::cout << "Powering on\n";
         //track the start of a new period
         track_new_active_period(&stats, scheme, &simul_timer);
@@ -283,7 +277,7 @@ stats_bundle simulate(char const *binary_file,
       was_active = true;
 
       // run one instruction
-      auto const instruction_ticks = step_cpu(temp_pc_map, scheme, &stats, &task_history_tracker);
+      auto const instruction_ticks = step_cpu(scheme, &stats, &task_history_tracker);
       simul_timer.active_tick(instruction_ticks);
       // update stats after instruction
       update_stats_after_instruction(&stats, instruction_ticks);
@@ -324,17 +318,13 @@ stats_bundle simulate(char const *binary_file,
     }
   }
 
-
+  //print out task pattern data
   std::ofstream task_pattern_data;
-
-
   task_pattern_data.open("task_pattern_data.txt");
-  task_pattern_data <<  "hi";
-
-  for (auto it = task_history_tracker.task_history_data.begin(); it != task_history_tracker.task_history_data.end(); it++) {
+  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
 
     task_pattern_data << "Task: " << it->first << "\n";
-    std::vector <int> task_history = it->second.task_history;
+    std::vector <int> task_history = it->second;
     for (int i = 0; i< task_history.size(); i++){
       task_pattern_data << "Iteration: " << i << " ";
 
@@ -348,9 +338,21 @@ stats_bundle simulate(char const *binary_file,
 
 
   }
-
   task_pattern_data.close();
-  std::multimap<int, int> temp_sorted_pc_map = flip_map(temp_pc_map);
+
+
+  //print out time/energy data
+
+  std::ofstream time_energy_data;
+  time_energy_data.open("time_energy_data.txt");
+  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
+      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
+  }
+  time_energy_data.close();
+
+  std::cout <<"Writing output files... \n";
+
+
 
   std::cout << "Done simulation\n";
 

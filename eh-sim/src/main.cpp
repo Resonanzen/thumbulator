@@ -64,7 +64,8 @@ int main(int argc, char *argv[])
       {"binary", {"-b", "--binary"}, "path to application binary", 1},
       {"output", {"-o", "--output"}, "output file", 1,},
       {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,},
-      {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to Plot", 0}}};
+      {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to simulate", 1},
+  }};
 
 
 
@@ -87,7 +88,16 @@ int main(int argc, char *argv[])
     }
 
 
+    bool full_sim;
+    uint64_t active_periods_to_simulate = 0;
+    if (options["active_periods_to_simulate"].count() != 0){
+        active_periods_to_simulate = options["active_periods_to_simulate"].as<uint64_t>();
+        full_sim = false;
+    }else{
+        full_sim == true;
+    }
 
+    
     //double const trace_period = 0.001;
     //double const trace_resistance = 30000;
 
@@ -126,7 +136,7 @@ int main(int argc, char *argv[])
 
 
 
-    auto const stats = ehsim::simulate(path_to_binary, power, scheme.get());
+    auto const stats = ehsim::simulate(path_to_binary, power, scheme.get(), full_sim, active_periods_to_simulate);
 
     std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
     std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";

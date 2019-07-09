@@ -14,28 +14,19 @@ using namespace std::chrono_literals;
 namespace ehsim{
 
 
-    struct task_data{
-        std::vector<int> task_history;
-        uint64_t forward_progress = 0;
-        std::chrono::nanoseconds total_run_time = 0ms;
-    };
-
     class task_history_tracker{
     public:
-
+        task_history_tracker();
         void  update_if_task_change(uint64_t pc_of_task);
 
-        void update_task_history(uint64_t pc_of_task, stats_bundle *stats);
+        void update_task_history(uint64_t pc_of_backup, stats_bundle *stats);
 
-        std::map<uint64_t, task_data> task_history_data;
+        //need to build accessor function, but for some reason it doesn't work in the for loop
+        std::map<uint64_t, std::vector<int> > task_history;
 
-
-        uint64_t get_current_task(){
-            return current_task;
-        };
         void task_failed();
     private:
-        std::map<uint64_t, std::vector<int> > task_history;
+
         uint64_t current_task = 0;
 
 
