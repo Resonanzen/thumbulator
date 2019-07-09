@@ -23,7 +23,7 @@ add_executable(
   src/stats.hpp
   src/voltage_trace.cpp
   src/voltage_trace.hpp
-        src/input_source.cpp src/input_source.hpp src/capacitor.cpp src/scheme/task_based.hpp src/energy_controller.cpp src/energy_controller.h src/simul_timer.cpp src/simul_timer.h src/task_history.h src/task_history.cpp)
+        src/input_source.cpp src/input_source.hpp src/capacitor.cpp src/scheme/task_based.hpp src/simul_timer.cpp src/simul_timer.h src/task_history.h src/task_history.cpp)
 
 target_include_directories(
   ${PROJECT_NAME}

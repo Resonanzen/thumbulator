@@ -54,6 +54,19 @@ public:
     return 0;
   }
 
+
+
+    double min_energy_to_power_on(stats_bundle *stats) override
+    {
+      return 0;
+    }
+
+
+    double estimate_progress(eh_model_parameters const &) const override
+    {
+      return 0;
+    }
+
   uint64_t restore(stats_bundle *stats) override
   {
     // do not touch arch/app state

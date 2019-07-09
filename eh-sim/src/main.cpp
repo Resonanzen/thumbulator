@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <scheme/magical_scheme.hpp>
 
 #include "scheme/backup_every_cycle.hpp"
 #include "scheme/clank.hpp"
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     } else if(scheme_select == "odab") {
       throw std::runtime_error("ODAB is no longer supported.");
     } else if(scheme_select == "magic") {
-      throw std::runtime_error("Magic is no longer supported.");
+      scheme = std::make_unique<ehsim::magical_scheme>();
     } else if(scheme_select == "clank") {
       scheme = std::make_unique<ehsim::clank>();
     } else if(scheme_select == "parametric") {
@@ -132,7 +133,6 @@ int main(int argc, char *argv[])
     }
 
     ehsim::voltage_trace power(path_to_voltage_trace, sampling_period);
-
 
 
 

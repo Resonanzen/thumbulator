@@ -17,24 +17,33 @@ public:
     task_based() : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
     {
     }
-
+    /**
+     * constructor that can affect the frequency
+     * @param __system_frequency
+     */
     task_based(uint64_t __system_frequency) : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
     {
         system_frequency = __system_frequency;
     }
 
-
+    /**
+     * return the battery that is associated with the system
+     * @return capacitor
+     */
 
     capacitor &get_battery() override
     {
         return battery;
     }
-
+    /**
+     * return the current clock frequency
+     * @return uint32_t
+     */
     uint32_t clock_frequency() const override
     {
         return system_frequency;
     }
-
+    //should delete from  base class, not really needed
     double min_energy_to_power_on(stats_bundle *stats) override
     {
         auto required_energy = NVP_INSTRUCTION_ENERGY + NVP_BEC_BACKUP_ENERGY;
@@ -46,7 +55,11 @@ public:
         return required_energy;
     }
 
-
+    /**
+     *  Update energy usage after instruction is executed. The acutual exeuction of the instruction is performed in step_cpu
+     * @param cycles
+     * @param stats
+     */
     void execute_instruction(uint32_t cycles,stats_bundle *stats){
 
         double energy_to_consume = cycles * CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE;
@@ -55,7 +68,7 @@ public:
        // std::cout <<energy_to_consume << "\n";
         stats->models.back().energy_for_instructions +=energy_to_consume;
     }
-
+    //Not used, potentially can delete
     void execute_instruction(stats_bundle *stats) override
     {
         //TODO: currently every inst consumes the same energy regardless of cycles (ticks)
@@ -70,7 +83,11 @@ public:
 
         stats->models.back().energy_for_instructions += CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE*elapsed_cycles;
     }
-
+    /**
+     * Return whether or not the system is active
+     * @param stats
+     * @return bool
+     */
     bool is_active(stats_bundle *stats) override
     {
         //yeah... unsure about required energy
@@ -88,13 +105,21 @@ public:
         }
         return active;
     }
-
+    /**
+     * Return whether or not system will backup after encountering a WFI instruction
+     * @param stats
+     * @return
+     */
     bool will_backup(stats_bundle *stats) const override
     {
         return stats->backup_requested;
     }
 
-
+    /**
+     * Perform backup. RAM, FLASH, registers are all saved. Update energy conditions after backup
+     * @param stats
+     * @return uint64_t (num cycles the backup took)
+     */
     uint64_t backup(stats_bundle *stats) override
     {
 
@@ -125,7 +150,11 @@ public:
         //return the number of cycles to backup al the used parts of RAM
         return (thumbulator::used_RAM_addresses.size())* TIMING_MEM;
     }
-
+    /**
+     * Restore system to the previous backed up state
+     * @param stats
+     * @return
+     */
     uint64_t restore(stats_bundle *stats) override
     {
         last_backup_cycle = stats->cpu.cycle_count;
@@ -149,6 +178,10 @@ public:
         return estimate_eh_progress(eh, dead_cycles::best_case, NVP_BEC_OMEGA_R, NVP_BEC_SIGMA_R, NVP_BEC_A_R,
                                     NVP_BEC_OMEGA_B, NVP_BEC_SIGMA_B, NVP_BEC_A_B);
     }
+
+    /**
+     * Ensure that there is an existing state to fall back on from the verying beginning.
+     */
 
     void execute_startup_routine()  override
     {

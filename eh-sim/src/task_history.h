@@ -17,23 +17,17 @@ namespace ehsim{
     class task_history_tracker{
     public:
         task_history_tracker();
-        void  update_if_task_change(uint64_t pc_of_task);
-
+        //update the task history after encountering a WFI instruction
         void update_task_history(uint64_t pc_of_backup, stats_bundle *stats);
 
         //need to build accessor function, but for some reason it doesn't work in the for loop
         std::map<uint64_t, std::vector<int> > task_history;
 
+        //update the task history after power shuts off during an active period
         void task_failed();
     private:
-
+        //pc of the current task
         uint64_t current_task = 0;
-
-
-
-
-        std::chrono::nanoseconds last_task_transition_time = 0ns;
-        bool recently_switched_task = false;
     };
 
 

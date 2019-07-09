@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <thumbulator/memory.hpp>
 #include <algorithm>
 
 namespace ehsim {
@@ -55,8 +56,8 @@ void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundl
 }
 
 /**
- * Execute one instruction.
- *ADD MOREDSFSD
+ * Execute one instruction. Handle backup instruction
+ *
  * @return Number of cycles to execute that instruction.
  */
 uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker *task_history_tracker)
@@ -73,9 +74,10 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
   auto current_pc = thumbulator::cpu_get_pc();
 
   uint32_t instruction_ticks = 0;
-    // fetch
-    uint16_t instruction;
-    thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
+
+  //fetch the instruction to be run
+  uint16_t instruction;
+  thumbulator::fetch_instruction(thumbulator::cpu_get_pc() - 0x4, &instruction);
 
   //handling backup signal (WFI)
   if(instruction == 0xBF30){
@@ -84,9 +86,9 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
       stats->backup_requested = true;
 
   }else{
-      // decode
-      stats->backup_requested = false;
 
+      stats->backup_requested = false;
+      //decode the fetched memory (that's not a wfi instruction
       auto const decoded = thumbulator::decode(instruction);
       // execute, memory, and write-back
       instruction_ticks = thumbulator::exmemwb(instruction, &decoded);
@@ -95,7 +97,7 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
   if(!thumbulator::BRANCH_WAS_TAKEN) {
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x2);
   } else {
-    //TODO: why does branch taken imply pc+4?
+    //TODO: why does branch taken imply pc+4? ...smthing to do with pipelining
     thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x4);
   }
 
@@ -130,7 +132,11 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
                  flip_pair<A,B>);
   return dst;
 }
-
+/**
+ * Update statistics collected during an active period
+ * @param stats
+ * @param scheme
+ */
 
 void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * scheme){
   auto &active_period = stats->models.back();
@@ -143,8 +149,13 @@ void update_active_period_stats(ehsim::stats_bundle *stats, ehsim::eh_scheme * s
           active_period.energy_forward_progress / active_period.energy_consumed;
   active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
 }
-//TODO: put scheme->backup outside
-void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, simul_timer * simul_timer){
+/**
+ * Backup system and collect relevant statistics to backup
+ * @param stats
+ * @param scheme
+ * @param simul_timer
+ */
+void backup_and_collect_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, simul_timer * simul_timer){
   stats->recently_backed_up = true;
   stats->dead_tasks = 0;
   auto const backup_time = scheme->backup(stats);
@@ -160,6 +171,13 @@ void update_backup_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *scheme, 
 }
 
 //TODO:: Make a charging graph curve the right way
+/**
+ * Harvest energy into the system
+ * @param simul_timer
+ * @param power
+ * @param stats
+ * @param scheme
+ */
 void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_trace power, ehsim::stats_bundle *stats, eh_scheme *scheme){
   auto env_voltage = power.get_voltage(to_milliseconds(simul_timer->current_system_time()));
   auto available_energy = (env_voltage * env_voltage / 30000) * 0.001;//0.001 is a microsecond //using 30kOhm resistor
@@ -172,8 +190,13 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
 
   //}
 }
-//TODO:: rename
-void track_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer * simul_timer){
+/**
+ * Start a new active period and collect relevant statistics
+ * @param stats
+ * @param scheme
+ * @param simul_timer
+ */
+void start_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer * simul_timer){
   stats->models.emplace_back();
   stats->models.back().active_start = stats->cpu.cycle_count;
   stats->models.back().energy_start = scheme->get_battery().energy_stored();
@@ -187,6 +210,11 @@ void track_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer
 }
 
 
+ /**
+  * Update statistics after running an instruction in step_cpu
+  * @param stats
+  * @param instruction_ticks
+  */
 void update_stats_after_instruction(stats_bundle *stats, uint64_t instruction_ticks){
   stats->cpu.instruction_count++;
   stats->cpu.cycle_count += instruction_ticks;
@@ -211,7 +239,11 @@ void update_final_stats(stats_bundle *stats, eh_scheme * scheme, simul_timer * s
     stats->system.time = simul_timer->current_system_time();
 }
 
-
+/**
+ * Check if you are making forward progress
+ * @param stats
+ * @return bool
+ */
 bool making_forward_progress(stats_bundle *stats){
   if (!stats->recently_backed_up){
     stats->dead_tasks++;
@@ -249,7 +281,7 @@ stats_bundle simulate(char const *binary_file,
 
   // init system
   initialize_system(binary_file, scheme, &stats);
-    auto was_active = false;
+  auto was_active = false;
 
 
   std::cout.setf(std::ios::unitbuf);
@@ -274,7 +306,7 @@ stats_bundle simulate(char const *binary_file,
           }
         std::cout << "Powering on\n";
         //track the start of a new period
-        track_new_active_period(&stats, scheme, &simul_timer);
+        start_new_active_period(&stats, scheme, &simul_timer);
       }
       was_active = true;
 
@@ -289,7 +321,7 @@ stats_bundle simulate(char const *binary_file,
 
       // execute backup
       if (scheme->will_backup(&stats)) {
-        update_backup_stats(&stats, scheme, &simul_timer);
+        backup_and_collect_stats(&stats, scheme, &simul_timer);
       }
 
       if (simul_timer.harvest_while_active()) {
@@ -351,6 +383,29 @@ stats_bundle simulate(char const *binary_file,
       time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
   }
   time_energy_data.close();
+
+
+
+
+
+  //dump out memory
+
+
+  std::ofstream flash_data;
+  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
+  flash_data.open("flash_data.txt");
+  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
+      if (i % 10 == 0){
+          flash_data << "\n";
+      }
+      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
+
+
+  }
+
+
+
+
 
   std::cout <<"Writing output files... \n";
 
