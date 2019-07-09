@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         full_sim == true;
     }
 
-    
+
     //double const trace_period = 0.001;
     //double const trace_resistance = 30000;
 
@@ -141,8 +141,8 @@ int main(int argc, char *argv[])
     std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
     std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
     std::cout << "Total time (ns): " << stats.system.time.count() << "\n";
-    std::cout << "Energy harvested (J): " << stats.system.energy_harvested * 1e-9 << "\n";
-    std::cout << "Energy remaining (J): " << stats.system.energy_remaining * 1e-9 << "\n";
+    std::cout << "Energy harvested (J): " << stats.system.energy_harvested  << "\n";
+    std::cout << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
 
     std::string output_file_name(scheme_select + ".csv");
     if(options["output"].count() > 0) {

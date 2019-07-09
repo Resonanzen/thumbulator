@@ -166,8 +166,10 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
   // cap should not harvest if source voltage is higher than cap voltage
   //if (scheme->get_battery().voltage() < env_voltage) {
     auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
-   //  std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+//     std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
+//     std::cout << stats->system.energy_harvested << "\n";
      stats->system.energy_harvested += battery_energy;
+
   //}
 }
 //TODO:: rename
