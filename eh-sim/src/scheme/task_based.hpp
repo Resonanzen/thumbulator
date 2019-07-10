@@ -130,11 +130,11 @@ public:
          * This is needed bc the energy needed to backup 8mb of RAM is way higher than the current capacitor's capacity
          */
 
-        //std::cout << "BACKUP! Saving state at pc = " << thumbulator::cpu_get_pc() - 0x5 << "\n";
+       // std::cout << "BACKUP! Saving state at pc = " << std::hex<< thumbulator::cpu_get_pc() - 0x5 << "\n";
         // do not touch arch/app state, assume it is all non-volatile
         auto &active_stats = stats->models.back();
         active_stats.num_backups++;
-
+        branch_taken = thumbulator::BRANCH_WAS_TAKEN;
         active_stats.time_between_backups += stats->cpu.cycle_count - last_backup_cycle;
         last_backup_cycle = stats->cpu.cycle_count;
 
@@ -158,13 +158,15 @@ public:
     uint64_t restore(stats_bundle *stats) override
     {
         last_backup_cycle = stats->cpu.cycle_count;
-
+        thumbulator::BRANCH_WAS_TAKEN = branch_taken;
 
         // do not touch arch/app state, assume it is all non-volatile
-       // std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
-       // std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
-       // thumbulator::cpu = backup_ARCHITECTURE;
-        std::cout << "RESTORE! Restore at PC = "<< thumbulator::cpu_get_pc() -0x5 << "\n";
+     std::copy(std::begin(backup_RAM), std::end(backup_RAM), std::begin(thumbulator::RAM));
+     std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
+
+        thumbulator::cpu_reset();
+       thumbulator::cpu = backup_ARCHITECTURE;
+        std::cout << "RESTORE! Restore at PC = "<< std::hex << thumbulator::cpu_get_pc() -0x5 << "\n";
 
         double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
         stats->models.back().energy_for_restore = energy_for_restore;
@@ -202,7 +204,7 @@ private:
     uint32_t backup_FLASH[FLASH_SIZE_BYTES>>2];
     thumbulator::cpu_state backup_ARCHITECTURE = thumbulator::cpu;
     uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
-
+    bool branch_taken = thumbulator::BRANCH_WAS_TAKEN;
     uint64_t ram_bytes_used = 0;
 };
 }

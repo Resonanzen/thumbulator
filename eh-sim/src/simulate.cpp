@@ -331,7 +331,7 @@ stats_bundle simulate(char const *binary_file,
     } else {
       // system was just on, start of off period
       if (was_active) {
-        //uh oh
+        //only track stores between addresses
         thumbulator::used_RAM_addresses.clear();
 
         //by definition, if you've turned off, you've turned off in the middle of a task
@@ -394,17 +394,21 @@ stats_bundle simulate(char const *binary_file,
 //  //dump out memory
 //
 //
-//  std::ofstream flash_data;
-//  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
-//  flash_data.open("flash_data.txt");
-//  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
-//      if (i % 10 == 0){
-//          flash_data << "\n";
-//      }
-//      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
-//
-//
-//  }
+  std::ofstream flash_data;
+  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
+  flash_data.open("flash_data.txt");
+  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
+      if (i % 10 == 0){
+          flash_data << "\n";
+      }
+      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
+
+
+  }
+  flash_data << "\n register values: \n";
+  for (int i = 0; i < 16; i++){
+      flash_data << thumbulator::cpu.gpr[i] << " ";
+  }
 //
 //
 

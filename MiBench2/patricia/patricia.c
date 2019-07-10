@@ -327,6 +327,7 @@ pat_search(unsigned long key, struct ptree *head)
 	 * Find closest matching leaf node.
 	 */
 	do {
+
 		/*
 		 * Keep track of most complete match so far.
 		 */

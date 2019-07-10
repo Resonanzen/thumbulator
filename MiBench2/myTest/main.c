@@ -20,6 +20,10 @@ int main(void){
 		if (i % 1000== 0){
 		__asm__("WFI");}
 		asdf=deg2rad(i);
+
+		if (i == 26909){
+			break;		
+		}
 	
 	}
 
