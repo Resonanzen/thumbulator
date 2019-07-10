@@ -161,9 +161,9 @@ public:
 
 
         // do not touch arch/app state, assume it is all non-volatile
-        std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
-        std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
-        thumbulator::cpu = backup_ARCHITECTURE;
+       // std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
+       // std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
+       // thumbulator::cpu = backup_ARCHITECTURE;
         std::cout << "RESTORE! Restore at PC = "<< thumbulator::cpu_get_pc() -0x5 << "\n";
 
         double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());

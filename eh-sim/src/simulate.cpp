@@ -331,6 +331,9 @@ stats_bundle simulate(char const *binary_file,
     } else {
       // system was just on, start of off period
       if (was_active) {
+        //uh oh
+        thumbulator::used_RAM_addresses.clear();
+
         //by definition, if you've turned off, you've turned off in the middle of a task
 
         task_history_tracker.task_failed();
@@ -352,58 +355,58 @@ stats_bundle simulate(char const *binary_file,
     }
   }
 
-  //print out task pattern data
-  std::ofstream task_pattern_data;
-  task_pattern_data.open("task_pattern_data.txt");
-  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
-
-    task_pattern_data << "Task: " << it->first << "\n";
-    std::vector <int> task_history = it->second;
-    for (int i = 0; i< task_history.size(); i++){
-      task_pattern_data << "Iteration: " << i << " ";
-
-      if (task_history[i] == 1){
-        task_pattern_data << "Success";
-      }else{
-        task_pattern_data << "Fail";
-      }
-      task_pattern_data << "\n";
-    }
-
-
-  }
-  task_pattern_data.close();
-
-
-  //print out time/energy data
-
-  std::ofstream time_energy_data;
-  time_energy_data.open("time_energy_data.txt");
-  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
-      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
-  }
-  time_energy_data.close();
-
-
-
-
-
-  //dump out memory
-
-
-  std::ofstream flash_data;
-  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
-  flash_data.open("flash_data.txt");
-  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
-      if (i % 10 == 0){
-          flash_data << "\n";
-      }
-      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
-
-
-  }
-
-
+//  //print out task pattern data
+//  std::ofstream task_pattern_data;
+//  task_pattern_data.open("task_pattern_data.txt");
+//  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
+//
+//    task_pattern_data << "Task: " << it->first << "\n";
+//    std::vector <int> task_history = it->second;
+//    for (int i = 0; i< task_history.size(); i++){
+//      task_pattern_data << "Iteration: " << i << " ";
+//
+//      if (task_history[i] == 1){
+//        task_pattern_data << "Success";
+//      }else{
+//        task_pattern_data << "Fail";
+//      }
+//      task_pattern_data << "\n";
+//    }
+//
+//
+//  }
+//  task_pattern_data.close();
+//
+//
+//  //print out time/energy data
+//
+//  std::ofstream time_energy_data;
+//  time_energy_data.open("time_energy_data.txt");
+//  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
+//      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
+//  }
+//  time_energy_data.close();
+//
+//
+//
+//
+//
+//  //dump out memory
+//
+//
+//  std::ofstream flash_data;
+//  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
+//  flash_data.open("flash_data.txt");
+//  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
+//      if (i % 10 == 0){
+//          flash_data << "\n";
+//      }
+//      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
+//
+//
+//  }
+//
+//
 
 
 
