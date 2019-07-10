@@ -1,0 +1,17 @@
+Benchmarks that had errors:
+
+Assertion: ‘m_energy-energy_to_consume >= 0’ failed:
+Dijkstra
+Fft
+lzfx
+stringstreach
+
+DLR memory access out of range:
+Patricia
+
+PC moved out of thumb mode:
+Picojpeg
+
+No forward progress (likely just need to add more WFI):
+Qsort
+Susan (edited) 
