@@ -1,0 +1,11 @@
+Size of voltage trace (ms): 25274
+Starting simulation
+Powering on
+Size of Flash: 2097152
+Writing output files... 
+Done simulation
+CPU instructions executed: 4340334
+CPU time (cycles): 6782907
+Total time (ns): 847863375
+Energy harvested (J): 1.54575e-07
+Energy remaining (J): 1.54575e-07

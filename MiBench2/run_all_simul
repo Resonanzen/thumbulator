@@ -1,0 +1,22 @@
+#!/bin/bash
+
+for filename in binaries/*.bin; do
+	parsed_file_name=${filename%.*};
+	echo  ${filename%.*};
+	
+	eh-sim -b $filename --voltage-rate 1 --voltage-trace ../../1.txt --scheme task >& ${parsed_file_name}_simul_task
+	mv  ${parsed_file_name}_simul_task simul_results
+	mv memory_dump.txt ${parsed_file_name}_task_memory
+
+
+	eh-sim -b $filename --voltage-rate 1 --voltage-trace ../../1.txt --scheme magic >& ${parsed_file_name}_simul_magic
+	mv ${parsed_file_name}_simul_magic simul_results
+	mv memory_dump.txt ${parsed_file_name}_magic_memory
+
+
+	diff ${parsed_file_name}_task_memory ${parsed_file_name}_magic_memory >& ${parsed_file_name}_memory_diff
+	
+	mv ${parsed_file_name}_memory_diff simul_results
+
+
+done
