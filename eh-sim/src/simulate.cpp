@@ -321,6 +321,9 @@ stats_bundle simulate(char const *binary_file,
 
       // execute backup
       if (scheme->will_backup(&stats)) {
+
+        //only track stores between backups
+        thumbulator::used_RAM_addresses.clear();
         backup_and_collect_stats(&stats, scheme, &simul_timer);
       }
 
@@ -331,11 +334,12 @@ stats_bundle simulate(char const *binary_file,
     } else {
       // system was just on, start of off period
       if (was_active) {
-        //only track stores between addresses
-        thumbulator::used_RAM_addresses.clear();
+
+        //wipe out volatile elements of the system
+        std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
+        thumbulator::cpu_reset();
 
         //by definition, if you've turned off, you've turned off in the middle of a task
-
         task_history_tracker.task_failed();
 
         fprintf(stderr, "Turning off at state pc= %X\n", thumbulator::cpu_get_pc() - 0x5);
@@ -394,24 +398,37 @@ stats_bundle simulate(char const *binary_file,
 //  //dump out memory
 //
 //
-  std::ofstream flash_data;
+  std::ofstream memory_dump;
   std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
-  flash_data.open("flash_data.txt");
+  memory_dump.open("memory_dump.txt");
+  memory_dump << "FLASH_MEMORY\n";
   for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
       if (i % 10 == 0){
-          flash_data << "\n";
+          memory_dump<< "\n";
       }
-      flash_data << thumbulator::FLASH_MEMORY[i] << " ";
+      memory_dump<< thumbulator::FLASH_MEMORY[i] << " ";
 
 
   }
-  flash_data << "\n register values: \n";
+  memory_dump<< "\n";
+  memory_dump << "RAM memory: \n";
+  for (int i = 0; i < RAM_SIZE_ELEMENTS; i++){
+    if (i % 10 == 0){
+      memory_dump<< "\n";
+    }
+    memory_dump<< thumbulator::RAM[i]<< " ";
+
+
+  }
+
+  memory_dump<< "\n";
+  memory_dump << "\n register values: \n";
   for (int i = 0; i < 16; i++){
-      flash_data << thumbulator::cpu.gpr[i] << " ";
+      memory_dump << thumbulator::cpu.gpr[i] << " ";
   }
 //
 //
-
+  memory_dump.close();
 
 
   std::cout <<"Writing output files... \n";

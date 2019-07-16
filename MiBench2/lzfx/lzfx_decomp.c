@@ -51,7 +51,7 @@ int lzfx_decompress_tiny
 
     opoff=0;
     for(ipoff=0;ipoff<ilen;)
-    {
+    {__asm__("WFI");	 
         unsigned int ctrl;
 
         ctrl = ibuf[ipoff++];
@@ -68,6 +68,7 @@ int lzfx_decompress_tiny
 
             while(ctrl--)
             {
+		__asm__("WFI");	 
                 obuf[opoff++]=ibuf[ipoff++];
             }
 

@@ -13,9 +13,11 @@ int old_main();
 // main for benchmark purposes that does fft and inverse fft
 int main() {
     MAXSIZE = 1024;
+__asm__("WFI");	 
     old_main();
     invfft = 1;
     MAXSIZE = 2048;
+__asm__("WFI");	 
     old_main();
     
     return 0;
@@ -43,6 +45,7 @@ __asm__("WFI");
  /* Makes MAXWAVES waves of random amplitude and period */
 	for(i=0;i<MAXWAVES;i++) 
 	{
+	__asm__("WFI");		
 		coeff[i] = rand()%1000;
 		amp[i] = rand()%1000;
 	}
@@ -52,6 +55,7 @@ __asm__("WFI");
 	 RealIn[i]=0;
 	 for(j=0;j<MAXWAVES;j++) 
 	 {
+	 
 __asm__("WFI");	 
 		 /* randomly select sin or cos */
 		 if (rand()%2)
@@ -76,6 +80,7 @@ __asm__("WFI");
 
 printf("ImagOut:\n");
  for (i=0;i<MAXSIZE;i++)
+	__asm__("WFI");	 
    printf("%f \t", ImagOut[i]);
    printf("\n");
 

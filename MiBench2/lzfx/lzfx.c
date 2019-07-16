@@ -106,9 +106,9 @@ int lzfx_compress(const void *const ibuf, const unsigned int ilen,
     if(olen == NULL) return LZFX_EARGS;
     if(ibuf == NULL) return LZFX_EARGS;
     if(obuf == NULL) return LZFX_EARGS;
-
+__asm__("WFI");	 
     memset(htab, 0, sizeof(htab));
-
+__asm__("WFI");	 
     /*  Start a literal run.  Whenever we do this the output pointer is
         advanced because the current byte will hold the encoded length. */
     lit = 0; op++;
