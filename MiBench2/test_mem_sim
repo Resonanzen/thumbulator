@@ -1,0 +1,20 @@
+#!/bin/bash
+echo "Enter binary file"
+
+read binary_file
+echo "Enter path to trace"
+read path_to_trace
+
+eh-sim -b $binary_file --voltage-rate 1 --voltage-trace $path_to_trace --scheme task >& ${parsed_file_name}_simul_task
+mv memory_dump.txt ${parsed_file_name}_task_mem
+
+
+eh-sim -b $binary_file --voltage-rate 1 --voltage-trace $path_to_trace --scheme magic >& ${parsed_file_name}_simul_magic
+mv memory_dump.txt ${parsed_file_name}_task_magic
+
+diff memory_dump.txt ${parsed_file_name}_task_mem mv memory_dump.txt ${parsed_file_name}_task_magic >& memory_diff.txt
+
+
+
+
+
