@@ -14,6 +14,23 @@
 #include "simulate.hpp"
 #include "voltage_trace.hpp"
 #include "input_source.hpp"
+#include <fstream>
+/**
+ * Compare text file output of magic/task memory. Need to do this bc declaring 4 arrays to compare flash and ram of both task and magic schemes is too much.
+ * @param task_memory_path
+ * @return
+ */
+bool memory_is_consistent(uint32_t task_memory[], uint32_t flash_memory[], uint64_t memory_length){
+  for (int i = 0; i < memory_length; i++){
+      if (task_memory[i] != flash_memory[i]){
+          return false;
+      }
+  }
+  return true;
+}
+
+uint32_t task_ram[RAM_SIZE_ELEMENTS];
+uint32_t task_flash[FLASH_SIZE_ELEMENTS];
 
 void print_usage(std::ostream &stream, argagg::parser const &arguments)
 {
@@ -66,11 +83,15 @@ int main(int argc, char *argv[])
       {"output", {"-o", "--output"}, "output file", 1,},
       {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,},
       {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to simulate", 1},
+      {"check_memory",{"--check-mem"},"Check memory consistency", 0}
   }};
 
 
 
   try {
+
+
+
     auto const options = arguments.parse(argc, argv);
     if (options["help"]) {
       print_usage(std::cout, arguments);
@@ -78,6 +99,12 @@ int main(int argc, char *argv[])
     }
 
     validate(options);
+
+    bool check_mem = false;
+    if (options["check_memory"]){
+        check_mem = true;
+    }
+
 
     auto const path_to_binary = options["binary"];
 
@@ -135,8 +162,11 @@ int main(int argc, char *argv[])
     ehsim::voltage_trace power(path_to_voltage_trace, sampling_period);
 
 
+    std::cout <<"Running with scheme " << scheme_select << ":\n";
+    auto const stats = ehsim::simulate(path_to_binary, power, scheme.get(), full_sim, active_periods_to_simulate, scheme_select);
 
-    auto const stats = ehsim::simulate(path_to_binary, power, scheme.get(), full_sim, active_periods_to_simulate);
+    std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(task_ram));
+    std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(task_flash));
 
     std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
     std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
@@ -178,6 +208,33 @@ int main(int argc, char *argv[])
       out << std::setprecision(3) << model.eh_progress << "\n";
     }
 
+
+
+
+    if (check_mem) {
+        std::cout << "\nRunning simulation with magic scheme: \n";
+        std::string scheme_selected = "magic";
+        std::unique_ptr<ehsim::eh_scheme> magic_scheme = nullptr;
+        magic_scheme = std::make_unique<ehsim::magical_scheme>();
+        auto const stats =   ehsim::simulate(path_to_binary, power, magic_scheme.get(), full_sim, active_periods_to_simulate, scheme_selected);
+
+        std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
+        std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
+        std::cout << "Total time (ns): " << stats.system.time.count() << "\n";
+        std::cout << "Energy harvested (J): " << stats.system.energy_harvested  << "\n";
+        std::cout << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
+
+
+
+        std::cout << "Checking memory consistency..\n";
+        if (memory_is_consistent(task_ram, thumbulator::RAM, RAM_SIZE_ELEMENTS) && memory_is_consistent(task_flash, thumbulator::FLASH_MEMORY, FLASH_SIZE_ELEMENTS)){
+            std::cout << "Memory is consistent!\n";
+        }else{
+            std::cout << "Memory is not consistent! Please run: diff task_memory_dump magic_memory_dump \n";
+        }
+
+
+    }
   } catch(std::exception const &e) {
     std::cerr << "Error: " << e.what() << "\n";
     return EXIT_FAILURE;

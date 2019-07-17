@@ -224,17 +224,18 @@ void update_stats_after_instruction(stats_bundle *stats, uint64_t instruction_ti
 
 void update_final_stats(stats_bundle *stats, eh_scheme * scheme, simul_timer * simul_timer){
     auto &active_period = stats->models.back();
-    active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
-                               active_period.time_for_restores;
+    if (!stats->models.empty()) {
+        active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
+                                   active_period.time_for_restores;
 
 
-    active_period.energy_consumed = active_period.energy_for_instructions +
-                                    active_period.energy_for_backups +
-                                    active_period.energy_for_restore;
+        active_period.energy_consumed = active_period.energy_for_instructions +
+                                        active_period.energy_for_backups +
+                                        active_period.energy_for_restore;
 
-    active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
-    active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
-
+        active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
+        active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+    }
     stats->system.energy_remaining = scheme->get_battery().energy_stored();
     stats->system.time = simul_timer->current_system_time();
 }
@@ -267,7 +268,7 @@ bool making_forward_progress(stats_bundle *stats){
 
 stats_bundle simulate(char const *binary_file,
     ehsim::voltage_trace const &power,
-    eh_scheme *scheme, bool full_sim, uint64_t active_periods_to_simulate) {
+    eh_scheme *scheme, bool full_sim, uint64_t active_periods_to_simulate, std::string scheme_select) {
   using namespace std::chrono_literals;
 
 
@@ -289,7 +290,7 @@ stats_bundle simulate(char const *binary_file,
   std::cout << "Starting simulation\n";
   // Simulation will terminate when it executes insn == 0xBFAA
 
-
+  thumbulator::EXIT_INSTRUCTION_ENCOUNTERED = false;
   while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
 
 
@@ -322,8 +323,6 @@ stats_bundle simulate(char const *binary_file,
       // execute backup
       if (scheme->will_backup(&stats)) {
 
-        //only track stores between backups
-        thumbulator::used_RAM_addresses.clear();
         backup_and_collect_stats(&stats, scheme, &simul_timer);
       }
 
@@ -399,8 +398,9 @@ stats_bundle simulate(char const *binary_file,
 //
 //
   std::ofstream memory_dump;
+  std::string file_name = scheme_select + "_memory_dump";
   std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
-  memory_dump.open("memory_dump.txt");
+  memory_dump.open(file_name);
   memory_dump << "FLASH_MEMORY\n";
   for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
       if (i % 10 == 0){

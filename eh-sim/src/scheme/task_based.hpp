@@ -167,8 +167,10 @@ public:
         thumbulator::cpu_reset();
        thumbulator::cpu = backup_ARCHITECTURE;
         std::cout << "RESTORE! Restore at PC = "<< std::hex << thumbulator::cpu_get_pc() -0x5 << "\n";
-
+        std::cout << std::dec;
         double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
+        //only track stores between backups
+        thumbulator::used_RAM_addresses.clear();
         stats->models.back().energy_for_restore = energy_for_restore;
         battery.consume_energy(energy_for_restore);
 
