@@ -397,9 +397,9 @@ stats_bundle simulate(char const *binary_file,
 //  //dump out memory
 //
 //
+//dump out all of ram,flash,and register values onto a file
   std::ofstream memory_dump;
   std::string file_name = scheme_select + "_memory_dump";
-  std::cout << "Size of Flash: " << FLASH_SIZE_ELEMENTS << "\n";
   memory_dump.open(file_name);
   memory_dump << "FLASH_MEMORY\n";
   for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){

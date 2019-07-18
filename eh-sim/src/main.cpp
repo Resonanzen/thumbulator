@@ -20,6 +20,7 @@
  * @param task_memory_path
  * @return
  */
+ //check if two arrays are the sameh
 bool memory_is_consistent(uint32_t task_memory[], uint32_t flash_memory[], uint64_t memory_length){
   for (int i = 0; i < memory_length; i++){
       if (task_memory[i] != flash_memory[i]){
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
       {"output", {"-o", "--output"}, "output file", 1,},
       {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,},
       {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to simulate", 1},
-      {"check_memory",{"--check-mem"},"Check memory consistency", 0}
+      {"check_memory",{"--check-mem"},"Check memory consistency", 0} //check memory consistency within the simulator option
   }};
 
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     validate(options);
-
+    //check if check_mem flag has been used
     bool check_mem = false;
     if (options["check_memory"]){
         check_mem = true;
@@ -164,7 +165,7 @@ int main(int argc, char *argv[])
 
     std::cout <<"Running with scheme " << scheme_select << ":\n";
     auto const stats = ehsim::simulate(path_to_binary, power, scheme.get(), full_sim, active_periods_to_simulate, scheme_select);
-
+    //copy memory into separate vector, so it can be compared against magic laterd
     std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(task_ram));
     std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(task_flash));
 
@@ -209,7 +210,7 @@ int main(int argc, char *argv[])
     }
 
 
-
+    //re-run the program with the magic scheme to compare memory
 
     if (check_mem) {
         std::cout << "\nRunning simulation with magic scheme: \n";
@@ -217,7 +218,7 @@ int main(int argc, char *argv[])
         std::unique_ptr<ehsim::eh_scheme> magic_scheme = nullptr;
         magic_scheme = std::make_unique<ehsim::magical_scheme>();
         auto const stats =   ehsim::simulate(path_to_binary, power, magic_scheme.get(), full_sim, active_periods_to_simulate, scheme_selected);
-
+        //print out results
         std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
         std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
         std::cout << "Total time (ns): " << stats.system.time.count() << "\n";
@@ -225,7 +226,7 @@ int main(int argc, char *argv[])
         std::cout << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
 
 
-
+        //check the memory consistency
         std::cout << "Checking memory consistency..\n";
         if (memory_is_consistent(task_ram, thumbulator::RAM, RAM_SIZE_ELEMENTS) && memory_is_consistent(task_flash, thumbulator::FLASH_MEMORY, FLASH_SIZE_ELEMENTS)){
             std::cout << "Memory is consistent!\n";
