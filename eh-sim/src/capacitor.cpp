@@ -1,5 +1,5 @@
 #include "capacitor.hpp"
-
+#include <iostream>
 #include <fstream>
 #include <cmath>
 
@@ -19,7 +19,7 @@ namespace ehsim {
   void capacitor::consume_energy(double const energy_to_consume) {
     assert(energy_to_consume >= 0);
     assert(m_energy - energy_to_consume >= 0);
-
+//std::cout <<"Consumed_Energy: " << energy_to_consume << "\n";
     m_energy -= energy_to_consume;
     update_voltage();
   }

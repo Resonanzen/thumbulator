@@ -15,6 +15,12 @@
 #include "voltage_trace.hpp"
 #include "input_source.hpp"
 #include <fstream>
+
+
+uint32_t task_ram[RAM_SIZE_ELEMENTS];
+uint32_t task_flash[FLASH_SIZE_ELEMENTS];
+
+
 /**
  * Compare text file output of magic/task memory. Need to do this bc declaring 4 arrays to compare flash and ram of both task and magic schemes is too much.
  * @param task_memory_path
@@ -29,9 +35,6 @@ bool memory_is_consistent(uint32_t task_memory[], uint32_t flash_memory[], uint6
   }
   return true;
 }
-
-uint32_t task_ram[RAM_SIZE_ELEMENTS];
-uint32_t task_flash[FLASH_SIZE_ELEMENTS];
 
 void print_usage(std::ostream &stream, argagg::parser const &arguments)
 {
@@ -90,8 +93,6 @@ int main(int argc, char *argv[])
 
 
   try {
-
-
 
     auto const options = arguments.parse(argc, argv);
     if (options["help"]) {
@@ -218,12 +219,7 @@ int main(int argc, char *argv[])
         std::unique_ptr<ehsim::eh_scheme> magic_scheme = nullptr;
         magic_scheme = std::make_unique<ehsim::magical_scheme>();
         auto const stats =   ehsim::simulate(path_to_binary, power, magic_scheme.get(), full_sim, active_periods_to_simulate, scheme_selected);
-        //print out results
-        std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
-        std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
-        std::cout << "Total time (ns): " << stats.system.time.count() << "\n";
-        std::cout << "Energy harvested (J): " << stats.system.energy_harvested  << "\n";
-        std::cout << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
+
 
 
         //check the memory consistency

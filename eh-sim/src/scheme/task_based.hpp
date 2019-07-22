@@ -147,8 +147,10 @@ public:
         active_stats.energy_for_backups += energy_for_backup ;
 
         battery.consume_energy(energy_for_backup);
+        num_addresses_touched = thumbulator::used_RAM_addresses.size();
+        thumbulator::used_RAM_addresses.clear(); //at the next backup, only the RAM touched in that task will be backed up
         //return the number of cycles to backup al the used parts of RAM
-        return (thumbulator::used_RAM_addresses.size())* TIMING_MEM;
+        return (num_addresses_touched)* TIMING_MEM;
     }
     /**
      * Restore system to the previous backed up state
@@ -161,20 +163,20 @@ public:
         thumbulator::BRANCH_WAS_TAKEN = branch_taken;
 
         // do not touch arch/app state, assume it is all non-volatile
-     std::copy(std::begin(backup_RAM), std::end(backup_RAM), std::begin(thumbulator::RAM));
-     std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
+        std::copy(std::begin(backup_RAM), std::end(backup_RAM), std::begin(thumbulator::RAM));
+        std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
 
         thumbulator::cpu_reset();
-       thumbulator::cpu = backup_ARCHITECTURE;
+        thumbulator::cpu = backup_ARCHITECTURE;
         std::cout << "RESTORE! Restore at PC = "<< std::hex << thumbulator::cpu_get_pc() -0x5 << "\n";
         std::cout << std::dec;
-        double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
-        //only track stores between backups
-        thumbulator::used_RAM_addresses.clear();
+        double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(num_addresses_touched);
+
         stats->models.back().energy_for_restore = energy_for_restore;
         battery.consume_energy(energy_for_restore);
 
-        return (thumbulator::used_RAM_addresses.size())*TIMING_MEM;
+        //return the number of cycles to backup al the used parts of RAM
+        return (num_addresses_touched)* TIMING_MEM;
     }
 
     double estimate_progress(eh_model_parameters const &eh) const override
@@ -207,7 +209,7 @@ private:
     thumbulator::cpu_state backup_ARCHITECTURE = thumbulator::cpu;
     uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
     bool branch_taken = thumbulator::BRANCH_WAS_TAKEN;
-    uint64_t ram_bytes_used = 0;
+    uint64_t num_addresses_touched = 0;
 };
 }
 

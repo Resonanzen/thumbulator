@@ -186,6 +186,7 @@ void harvest_energy_from_environment(simul_timer * simul_timer, ehsim::voltage_t
     auto battery_energy = scheme->get_battery().harvest_energy(available_energy);
 //     std::cout << "Active_Harvested_Energy: " << simul_timer->current_system_time().count()*1E-9 << " "<<available_energy << "\n";
 //     std::cout << stats->system.energy_harvested << "\n";
+//     std::cout << "Energy_Harvested " << battery_energy << "\n";
      stats->system.energy_harvested += battery_energy;
 
   //}
@@ -224,18 +225,18 @@ void update_stats_after_instruction(stats_bundle *stats, uint64_t instruction_ti
 
 void update_final_stats(stats_bundle *stats, eh_scheme * scheme, simul_timer * simul_timer){
     auto &active_period = stats->models.back();
-    if (!stats->models.empty()) {
-        active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
+
+    active_period.time_total = active_period.time_for_instructions + active_period.time_for_backups +
                                    active_period.time_for_restores;
 
 
-        active_period.energy_consumed = active_period.energy_for_instructions +
+    active_period.energy_consumed = active_period.energy_for_instructions +
                                         active_period.energy_for_backups +
                                         active_period.energy_for_restore;
 
-        active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
-        active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
-    }
+    active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
+      active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+
     stats->system.energy_remaining = scheme->get_battery().energy_stored();
     stats->system.time = simul_timer->current_system_time();
 }
@@ -359,36 +360,44 @@ stats_bundle simulate(char const *binary_file,
   }
 
 //  //print out task pattern data
-//  std::ofstream task_pattern_data;
-//  task_pattern_data.open("task_pattern_data.txt");
-//  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
+  std::ofstream task_pattern_data;
+  task_pattern_data.open("task_pattern_data.txt");
+  //print out all of the task PCs:
+  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end();it++){
+      task_pattern_data << it->first << " ";
+  }
+  task_pattern_data << "\n";
+
+  task_pattern_data << "Task Iteration Result" << "\n";
+
+  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
+
+
+    std::vector <int> task_history = it->second;
+    for (int i = 0; i< task_history.size(); i++){
+       task_pattern_data << it->first <<" "<< i << " ";
+
+      if (task_history[i] == 1){
+        task_pattern_data << "Success";
+      }else{
+        task_pattern_data << "Fail";
+      }
+      task_pattern_data << "\n";
+    }
+
+
+  }
+  task_pattern_data.close();
+
 //
-//    task_pattern_data << "Task: " << it->first << "\n";
-//    std::vector <int> task_history = it->second;
-//    for (int i = 0; i< task_history.size(); i++){
-//      task_pattern_data << "Iteration: " << i << " ";
-//
-//      if (task_history[i] == 1){
-//        task_pattern_data << "Success";
-//      }else{
-//        task_pattern_data << "Fail";
-//      }
-//      task_pattern_data << "\n";
-//    }
-//
-//
-//  }
-//  task_pattern_data.close();
-//
-//
-//  //print out time/energy data
-//
-//  std::ofstream time_energy_data;
-//  time_energy_data.open("time_energy_data.txt");
-//  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
-//      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
-//  }
-//  time_energy_data.close();
+  //print out time/energy data
+
+  std::ofstream time_energy_data;
+  time_energy_data.open("time_energy_data.txt");
+  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
+      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
+  }
+  time_energy_data.close();
 //
 //
 //

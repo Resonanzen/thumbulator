@@ -38,10 +38,14 @@ int main(void)
 
   printf("********* INTEGER SQR ROOTS ***********\n\r");
   /* perform some integer square roots */
-  for (i = 0; i < 101; ++i)
+  for (i = 0; i < 500; ++i)
     {
+
+	if (i%100 == 0){
+	__asm__("WFI");
+}
       usqrt(i, &q);
-    	__asm__("WFI");		// remainder differs on some machines
+    	// remainder differs on some machines
      // printf("sqrt(%3d) = %2d, remainder = %2d\n\r",
      printf("sqrt(%3d) = %2d\n\r",
 	     i, q.sqrt);
@@ -53,15 +57,20 @@ int main(void)
 
   printf("********* ANGLE CONVERSION ***********\n\r");
   /* convert some rads to degrees */
-	int aba;  
-for (X = 0.0; X <= 360.0; X += 1.0){
-    printf("%3.0f degrees = %.12f radians\n\r", X, deg2rad(X));
+	double aba;  
+for (int i = 0; i < 360; i++){
+   aba = deg2rad(i);
+	if (i % 10 == 0){
     __asm__("WFI");
-     
- }printf("\n\r");
-  for (X = 0.0; X <= (2 * PI + 1e-6); X += (PI / 180))
-	__asm__("WFI");
-    printf("%.12f radians = %3.0f degrees\n\r", X, rad2deg(X));
-    
-  return 0;
-}
+     }
+ }
+
+
+
+
+for (int i = 0; i < 360; i++){
+   aba = rad2deg(i);
+	if (i % 10 == 0){
+    __asm__("WFI");
+     }
+}}
