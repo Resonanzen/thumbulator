@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
 
     std::unique_ptr<ehsim::eh_scheme> scheme = nullptr;
-    auto const scheme_select = options["scheme"].as<std::string>("bec");
+    std::string  scheme_select = options["scheme"];
     if(scheme_select == "bec") {
       scheme = std::make_unique<ehsim::backup_every_cycle>();
     } else if(scheme_select == "odab") {

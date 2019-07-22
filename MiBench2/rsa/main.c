@@ -650,11 +650,10 @@ int main (void) {
     plaintext[1] = 0x6d65; // me
     plaintext[2] = 0x6e74; // nt
     plaintext[3] = 0x6f73; // os
-
+    __asm__("WFI");
     int cnt;
     printf("Plaintext:\n\r");
     for(cnt = 0; cnt < KEYLEN; ++cnt)
-	__asm__("WFI");	 
       printf("0x%08X\n\r", plaintext[cnt]);
 
     test_rsa_encrypt();
