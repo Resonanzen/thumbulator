@@ -112,7 +112,8 @@ public:
 
     // save architectural state
     architectural_state = thumbulator::cpu;
-
+    std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
+    std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
     // reset the watchdog
     progress_watchdog = WATCHDOG_PERIOD;
     // clear idempotency-tracking buffers
@@ -134,7 +135,8 @@ public:
     // restore saved architectural state
     thumbulator::cpu_reset();
     thumbulator::cpu = architectural_state;
-
+    std::copy(std::begin(backup_RAM), std::end(backup_RAM), std::begin(thumbulator::RAM));
+    std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
     stats->models.back().energy_for_restore = CLANK_RESTORE_ENERGY;
     battery.consume_energy(CLANK_RESTORE_ENERGY);
 
@@ -174,6 +176,9 @@ private:
   std::set<uint32_t> writefirst_buffer;
 
   enum class operation { read, write };
+
+  uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
+  uint32_t backup_FLASH[FLASH_SIZE_BYTES>>2];
 
   void clear_buffers()
   {
