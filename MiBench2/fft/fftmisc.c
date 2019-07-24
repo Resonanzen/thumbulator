@@ -74,7 +74,7 @@ unsigned ReverseBits ( unsigned index, unsigned NumBits )
 
     for ( i=rev=0; i < NumBits; i++ )
     {
-__asm__("WFI");	
+
         rev = (rev << 1) | (index & 1);
         index >>= 1;
     }

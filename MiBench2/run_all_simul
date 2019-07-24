@@ -1,5 +1,5 @@
 #!/bin/bash
-
+mkdir simul_results
 for filename in binaries/*.bin; do
 	parsed_file_name=${filename%.*};
 	echo  ${filename%.*};

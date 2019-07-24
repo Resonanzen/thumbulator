@@ -118,8 +118,9 @@ __asm__("WFI");
     while(ip + 2 < in_end){   /* The NEXT macro reads 2 bytes ahead */
 	__asm__("WFI");	 
         hval = LZFX_NEXT(hval, ip);
-        hslot = htab + LZFX_IDX(hval);
-
+__asm__("WFI");        
+hslot = htab + LZFX_IDX(hval);
+__asm__("WFI");
         ref = *hslot; *hslot = ip;
 
         if( ref < ip
@@ -310,8 +311,9 @@ int main ( void )
     unsigned int rb;
 __asm__("WFI");	 
     def_len=sizeof(def_data);
+__asm__("WFI");
     ret=lzfx_compress(test_data,TEST_DATA_LEN,def_data,&def_len);
-
+__asm__("WFI");
     printf("%d\n",ret);
     printf("%u\n",def_len);
     if(ret) return(ret);

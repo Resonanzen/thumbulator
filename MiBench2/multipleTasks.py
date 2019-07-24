@@ -130,7 +130,7 @@ pc_list = []
 average_list = []
 standardDeviations = []
 for iteration_failure_history in iteration_failure_histories:
-	if (len(iteration_failure_history) > 1):
+	if (len(iteration_failure_history[1:]) > 1):
 		pc_list.append(int(iteration_failure_history[0]));
 		
 	

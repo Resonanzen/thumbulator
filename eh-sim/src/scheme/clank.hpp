@@ -150,7 +150,7 @@ public:
 
     void execute_startup_routine()  override
     {
-
+      architectural_state = thumbulator::cpu;
     }
 
 private:

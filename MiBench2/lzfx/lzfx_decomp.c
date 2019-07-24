@@ -104,6 +104,7 @@ int lzfx_decompress_tiny
 
             while(len--)
             {
+		__asm__("WFI");
                 obuf[opoff++]=obuf[refoff++];
             }
         }
