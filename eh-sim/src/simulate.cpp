@@ -81,6 +81,7 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
 
   //handling backup signal (WFI)
   if(instruction == 0xBF30){
+      std::cout <<"BACKUP encountered at " << thumbulator::cpu_get_pc() - 0x5 << "\n";
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
       task_history_tracker ->update_task_history(thumbulator::cpu_get_pc()-0x5, stats);
       stats->backup_requested = true;

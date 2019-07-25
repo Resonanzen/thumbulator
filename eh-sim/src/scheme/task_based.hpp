@@ -143,6 +143,8 @@ public:
         backup_ARCHITECTURE = thumbulator::cpu;
 
         double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
+        //std::cout << "BACKUP: " << thumbulator::used_RAM_addresses.size() << " " << energy_for_backup << "\n";
+       // std::cout << "Backup at PC = " << thumbulator::cpu.gpr[15] - 5 <<std::endl;
         //std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
         active_stats.energy_for_backups += energy_for_backup ;
 

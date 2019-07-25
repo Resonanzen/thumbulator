@@ -13,7 +13,7 @@ namespace ehsim {
       , m_max_energy(calculate_energy(maximum_voltage, m_capacitance))
       , m_energy(0)
   {
-
+    std::cout <<"max energy: " << m_max_energy << "\n";
   }
 
   void capacitor::consume_energy(double const energy_to_consume) {

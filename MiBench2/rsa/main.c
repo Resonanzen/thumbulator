@@ -551,13 +551,15 @@ void divide_mp_elements(uint16_t * q, uint16_t * r, uint16_t * x_in, int n,
     mult_by_power_of_b(_tmpglobal_ybnt, n, y, t, n - t);
 	
     while (1 == compare_mp_elements(_tmpglobal_x, _tmpglobal_ybnt, (int) n)) {
-__asm__("WFI");	 
+__asm__("WFI");	
+	printf("in the while loop\n"); 
         q[n - t] = q[n - t] + 1;
         subtract_mp_elements(_tmpglobal_x, _tmpglobal_x, _tmpglobal_ybnt, n);
     }
     //3)
     for (i = n - 1; i > t - 1; i--) { //<--- check index here
 __asm__("WFI");	 
+	printf("in the for loop\n");
         temp = _tmpglobal_x[i] - y[t - 1];
         //3.1)
         if (0 == temp) {
@@ -650,7 +652,7 @@ int main (void) {
     plaintext[1] = 0x6d65; // me
     plaintext[2] = 0x6e74; // nt
     plaintext[3] = 0x6f73; // os
-    __asm__("WFI");
+    //__asm__("WFI");
     int cnt;
     printf("Plaintext:\n\r");
     for(cnt = 0; cnt < KEYLEN; ++cnt)

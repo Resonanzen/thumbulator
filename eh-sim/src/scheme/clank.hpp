@@ -70,6 +70,7 @@ public:
 
     // clank's instruction energy is in Energy-per-Cycle
     auto const instruction_energy = CLANK_INSTRUCTION_ENERGY * elapsed_cycles;
+    std::cout <<elapsed_cycles << "\n";
     battery.consume_energy(instruction_energy);
     stats->models.back().energy_for_instructions += instruction_energy;
   }
@@ -77,16 +78,26 @@ public:
 
   void execute_instruction(uint32_t cycles,stats_bundle *stats)
   {
+
+      double energy_to_consume = cycles * CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE;
+
+      battery.consume_energy(energy_to_consume);
+     //  std::cout <<energy_to_consume << "\n";
+      stats->models.back().energy_for_instructions +=energy_to_consume;
   }
   bool is_active(stats_bundle *stats) override
   {
-    if(battery.energy_stored() >= battery.maximum_energy_stored()) {
-      power_on();
-    } else if(battery.energy_stored() < MAX_BACKUP_ENERGY) {
-      power_off();
-    }
+      auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
+      if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
+      {
+          active = true;
+      }
+      else if (battery.energy_stored() < required_energy)
+      {
 
-    return active;
+          active = false;
+      }
+      return active;
   }
 
   bool will_backup(stats_bundle *stats) const override
@@ -114,6 +125,8 @@ public:
     architectural_state = thumbulator::cpu;
     std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
     std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
+
+
     // reset the watchdog
     progress_watchdog = WATCHDOG_PERIOD;
     // clear idempotency-tracking buffers
@@ -122,7 +135,8 @@ public:
     idempotent_violation = false;
 
     active_stats.energy_for_backups += CLANK_BACKUP_ARCH_ENERGY;
-    battery.consume_energy(CLANK_BACKUP_ARCH_ENERGY);
+      std::cout <<"BACKUP " << CLANK_BACKUP_ARCH_ENERGY << "\n";
+   // battery.consume_energy(CLANK_BACKUP_ARCH_ENERGY);
 
     return CLANK_BACKUP_ARCH_TIME;
   }
@@ -138,7 +152,7 @@ public:
     std::copy(std::begin(backup_RAM), std::end(backup_RAM), std::begin(thumbulator::RAM));
     std::copy(std::begin(backup_FLASH), std::end(backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
     stats->models.back().energy_for_restore = CLANK_RESTORE_ENERGY;
-    battery.consume_energy(CLANK_RESTORE_ENERGY);
+   // battery.consume_energy(CLANK_RESTORE_ENERGY);
 
     // assume memory access latency for reads and writes is the same
     return CLANK_BACKUP_ARCH_TIME;
