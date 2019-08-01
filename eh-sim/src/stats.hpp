@@ -12,7 +12,7 @@ struct cpu_stats {
   uint64_t instruction_count = 0u;
 
   /**
-   * Number of cycles ticked.
+   * Number of cycles ticked. ONLY for instructions, not restore and backup (which is why this can be used for finding forward progress
    */
   uint64_t cycle_count = 0u;
 };
@@ -177,6 +177,8 @@ struct stats_bundle {
   int dead_tasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
   bool backup_requested = true;
   bool recently_backed_up= false;
+  uint64_t last_backup_time = 0;
+  uint64_t dead_cycles = 0;
   /**
    * Model of multiple active periods.
    */

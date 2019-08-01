@@ -16,24 +16,5 @@ int main(void){
 	}
 
 
-	for (int i = 0; i < 30000; i++){
-		if (i % 1000== 0){
-		__asm__("WFI");}
-		asdf=deg2rad(i);
-
-		if (i == 26909){
-			break;		
-		}
-	
-	}
-
-
-
-	for (int i = 0; i < 30000; i++){
-		if (i % 1000== 0){
-		__asm__("WFI");}
-		asdf=deg2rad(i);
-	
-	}
 
 }

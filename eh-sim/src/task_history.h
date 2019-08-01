@@ -14,6 +14,7 @@ using namespace std::chrono_literals;
 namespace ehsim{
 
 
+
     class task_history_tracker{
     public:
         task_history_tracker();
@@ -23,11 +24,19 @@ namespace ehsim{
         //need to build accessor function, but for some reason it doesn't work in the for loop
         std::map<uint64_t, std::vector<int> > task_history;
 
+        std::vector<uint64_t> get_task_lengths(){
+            return task_lengths;
+        }
+
         //update the task history after power shuts off during an active period
-        void task_failed();
+        void task_failed(stats_bundle *stats);
     private:
         //pc of the current task
         uint64_t current_task = 0;
+
+        //length of all the tasks run in terms of cycles, in order of when they were completed
+        std::vector<uint64_t> task_lengths;
+
     };
 
 

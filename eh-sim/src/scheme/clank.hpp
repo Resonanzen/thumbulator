@@ -70,7 +70,7 @@ public:
 
     // clank's instruction energy is in Energy-per-Cycle
     auto const instruction_energy = CLANK_INSTRUCTION_ENERGY * elapsed_cycles;
-    std::cout <<elapsed_cycles << "\n";
+ //   std::cout <<elapsed_cycles << "\n";
     battery.consume_energy(instruction_energy);
     stats->models.back().energy_for_instructions += instruction_energy;
   }
@@ -80,7 +80,7 @@ public:
   {
 
       double energy_to_consume = cycles * CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE;
-
+      progress_watchdog -= cycles;
       battery.consume_energy(energy_to_consume);
      //  std::cout <<energy_to_consume << "\n";
       stats->models.back().energy_for_instructions +=energy_to_consume;
@@ -127,6 +127,20 @@ public:
     std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
 
 
+
+    //okay, there's been an idempotent violation. Backup all the volatile memory in the write first buffer  (
+    for (auto it = writefirst_buffer.begin(); it != writefirst_buffer.end(); it++){
+
+        if (*it > 0x40000000){ //
+            thumbulator::flash_writes_during_backup.push_back(*it);
+        }
+    }
+
+
+
+
+
+
     // reset the watchdog
     progress_watchdog = WATCHDOG_PERIOD;
     // clear idempotency-tracking buffers
@@ -135,7 +149,7 @@ public:
     idempotent_violation = false;
 
     active_stats.energy_for_backups += CLANK_BACKUP_ARCH_ENERGY;
-      std::cout <<"BACKUP " << CLANK_BACKUP_ARCH_ENERGY << "\n";
+     // std::cout <<"BACKUP " << CLANK_BACKUP_ARCH_ENERGY << "\n";
    // battery.consume_energy(CLANK_BACKUP_ARCH_ENERGY);
 
     return CLANK_BACKUP_ARCH_TIME;
@@ -188,7 +202,7 @@ private:
 
   std::set<uint32_t> readfirst_buffer;
   std::set<uint32_t> writefirst_buffer;
-
+  std::vector<uint64_t> flash_writes;
   enum class operation { read, write };
 
   uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];

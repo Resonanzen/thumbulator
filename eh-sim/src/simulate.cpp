@@ -81,7 +81,7 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
 
   //handling backup signal (WFI)
   if(instruction == 0xBF30){
-      std::cout <<"BACKUP encountered at " << thumbulator::cpu_get_pc() - 0x5 << "\n";
+      //std::cout <<"BACKUP encountered at " << thumbulator::cpu_get_pc() - 0x5 << "\n";
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
       task_history_tracker ->update_task_history(thumbulator::cpu_get_pc()-0x5, stats);
       stats->backup_requested = true;
@@ -161,7 +161,7 @@ void backup_and_collect_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *sch
   stats->dead_tasks = 0;
   auto const backup_time = scheme->backup(stats);
 
-
+  stats->last_backup_time = stats->cpu.cycle_count;
   auto &active_stats = stats->models.back();
   active_stats.time_for_backups += backup_time;
 
@@ -281,6 +281,7 @@ stats_bundle simulate(char const *binary_file,
   simul_timer simul_timer(scheme->clock_frequency());
   task_history_tracker task_history_tracker;
   std::map<double,double> energy_time_map;
+  std::map<double, double>  backup_time_map; //time of backup and energy at that point
 
   // init system
   initialize_system(binary_file, scheme, &stats);
@@ -291,7 +292,7 @@ stats_bundle simulate(char const *binary_file,
   // Execute the program
   std::cout << "Starting simulation\n";
   // Simulation will terminate when it executes insn == 0xBFAA
-
+  std::cout << "energy_used_per_cycle " << ehsim::CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE << "\n";
   thumbulator::EXIT_INSTRUCTION_ENCOUNTERED = false;
   while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
 
@@ -324,7 +325,7 @@ stats_bundle simulate(char const *binary_file,
 
       // execute backup
       if (scheme->will_backup(&stats)) {
-
+        backup_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().energy_stored()});
         backup_and_collect_stats(&stats, scheme, &simul_timer);
       }
 
@@ -341,7 +342,7 @@ stats_bundle simulate(char const *binary_file,
         thumbulator::cpu_reset();
 
         //by definition, if you've turned off, you've turned off in the middle of a task
-        task_history_tracker.task_failed();
+        task_history_tracker.task_failed(&stats);
 
         fprintf(stderr, "Turning off at state pc= %X\n", thumbulator::cpu_get_pc() - 0x5);
         update_active_period_stats(&stats, scheme);
@@ -359,6 +360,9 @@ stats_bundle simulate(char const *binary_file,
       harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
     }
   }
+
+
+
 
 //  //print out task pattern data
   std::ofstream task_pattern_data;
@@ -398,15 +402,16 @@ stats_bundle simulate(char const *binary_file,
   for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
       time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
   }
+//
+
+  for (auto it = backup_time_map.begin(); it != backup_time_map.end(); it++){
+      time_energy_data << "Backup " << it->first << " " << it->second << "\n";
+  }
   time_energy_data.close();
 //
 //
-//
-//
-//
-//  //dump out memory
-//
-//
+//dump out memory
+
 //dump out all of ram,flash,and register values onto a file
   std::ofstream memory_dump;
   std::string file_name = scheme_select + "_memory_dump";
@@ -439,12 +444,26 @@ stats_bundle simulate(char const *binary_file,
 //
 //
   memory_dump.close();
+  //print out the average task length in terms of cycles
+  /*
+  std::vector<uint64_t> task_lengths = task_history_tracker.get_task_lengths();
+  for (int i = 0; i < task_lengths.size(); i++){
+    std::cout <<task_lengths[i] << "\n";
+  }
+  */
 
 
-  std::cout <<"Writing output files... \n";
-
-
-
+  //print out some more stats
+  uint64_t cycles_for_instructions = 0;
+  uint64_t cycles_for_restore_and_backup = 0;
+  for (auto it = stats.models.begin(); it != stats.models.end(); it++){
+    cycles_for_instructions += it->time_for_instructions;
+    cycles_for_restore_and_backup += it->time_for_backups;
+    cycles_for_restore_and_backup+=it->time_for_restores;
+  }
+  std::cout <<"total cycles for instructions: " << cycles_for_instructions << "\n";
+  std::cout <<"total cycles for restore and backup: " << cycles_for_restore_and_backup << "\n";
+  std::cout <<"Dead cycles: " << stats.dead_cycles;
   std::cout << "Done simulation\n";
 
   update_final_stats(&stats, scheme, &simul_timer);

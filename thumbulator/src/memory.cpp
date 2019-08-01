@@ -9,7 +9,7 @@
 namespace thumbulator {
 
 uint32_t RAM[RAM_SIZE_BYTES >> 2];
-
+std::vector<uint32_t> flash_writes_during_backup;
 std::unordered_set<uint32_t> used_RAM_addresses;
 
 std::function<uint32_t(uint32_t, uint32_t)> ram_load_hook;
@@ -105,7 +105,7 @@ void load(uint32_t address, uint32_t *value, uint32_t false_read)
 
 void store(uint32_t address, uint32_t value)
 {
- //   std::cout <<std::hex << address << "\n";
+
   if(address >= RAM_START) {
 
       if(address >= (RAM_START + RAM_SIZE_BYTES)) {

@@ -16,7 +16,7 @@ namespace thumbulator {
  * Random-Access Memory, like SRAM.
  */
 extern uint32_t RAM[RAM_SIZE_ELEMENTS];
-
+extern std::vector<uint32_t> flash_writes_during_backup;
 extern std::unordered_set<uint32_t> used_RAM_addresses;
 /**
  * Hook into loads to RAM.

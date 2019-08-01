@@ -28,15 +28,21 @@ void task_history_tracker::update_task_history(uint64_t pc_of_backup, ehsim::sta
         std::vector<int> task_history_vector;
 
         task_history.insert({current_task, task_history_vector});
+
+
     }
 
     //update task history of the current task
     task_history.find(current_task)->second.push_back(1);
+    //update the task length
+    task_lengths.push_back(stats->cpu.cycle_count - stats->last_backup_time);
 }
 
 
-void task_history_tracker::task_failed() {
+void task_history_tracker::task_failed(ehsim::stats_bundle *stats) {
     task_history.find(current_task)->second.push_back(0);
+    uint64_t dead_cycles_occured = stats->cpu.cycle_count - stats->last_backup_time;
+    stats->dead_cycles += dead_cycles_occured;
 
 }
 

@@ -4,10 +4,10 @@ for filename in binaries/*.bin; do
 	parsed_file_name=${filename%.*};
 	echo  ${filename%.*};
 	
-	eh-sim -b $filename --voltage-rate 1 --voltage-trace ../../1.txt --scheme task >& ${parsed_file_name}_simul_task
-	mv  ${parsed_file_name}_simul_task simul_results
-	mv task_pattern_data.txt ${parsed_file_name}_task_data
-	mv ${parsed_file_name}_task_data simul_results
+	eh-sim -b $filename --voltage-rate 1 --voltage-trace 1.txt --scheme clank >& ${parsed_file_name}_simul_clank
+	mv  ${parsed_file_name}_simul_clank simul_results
+#	mv task_pattern_data.txt ${parsed_file_name}_task_data
+#	mv ${parsed_file_name}_task_data simul_results
 #	mv memory_dump.txt ${parsed_file_name}_task_memory
 #	mv 
 

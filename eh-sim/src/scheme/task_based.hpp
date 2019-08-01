@@ -14,9 +14,16 @@ namespace ehsim {
  */
 class task_based : public eh_scheme {
 public:
+
     task_based() : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
     {
     }
+
+/*
+    task_based() : battery(MEMENTOS_CAPACITANCE, MEMENTOS_MAX_CAPACITOR_VOLTAGE, MEMENTOS_MAX_CURRENT)
+    {
+    }
+  */
     /**
      * constructor that can affect the frequency
      * @param __system_frequency
@@ -94,7 +101,7 @@ public:
         //I am just going to use the STM32 minimum operating voltage (1.5V) to set the required energy (datasheet in data_sheet.hpp)
         //this is still bad bc our ENERGY/cycle calculations assumes that the voltage across the CPU is constant
         auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
-        if(battery.energy_stored() >  battery.maximum_energy_stored() - required_energy)
+        if(battery.energy_stored() >=  battery.maximum_energy_stored() - required_energy)
         {
             active = true;
         }
@@ -143,7 +150,8 @@ public:
         backup_ARCHITECTURE = thumbulator::cpu;
 
         double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
-        //std::cout << "BACKUP: " << thumbulator::used_RAM_addresses.size() << " " << energy_for_backup << "\n";
+      //  std::cout << "BACKUP: " << thumbulator::used_RAM_addresses.size() << " " << energy_for_backup << "\n";
+       //
        // std::cout << "Backup at PC = " << thumbulator::cpu.gpr[15] - 5 <<std::endl;
         //std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
         active_stats.energy_for_backups += energy_for_backup ;
