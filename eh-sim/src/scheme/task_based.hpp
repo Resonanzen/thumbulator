@@ -97,20 +97,30 @@ public:
      */
     bool is_active(stats_bundle *stats) override
     {
-        //yeah... unsure about required energy
-        //I am just going to use the STM32 minimum operating voltage (1.5V) to set the required energy (datasheet in data_sheet.hpp)
-        //this is still bad bc our ENERGY/cycle calculations assumes that the voltage across the CPU is constant
-        auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
-        if(battery.energy_stored() >=  battery.maximum_energy_stored() - required_energy)
-        {
-            active = true;
-        }
-        else if (battery.energy_stored() < required_energy)
-        {
 
+
+        if (battery.voltage() >= 4.5){
+            active = true;
+        }else if (battery.voltage() < 1.8){
             active = false;
         }
         return active;
+
+
+//        //yeah... unsure about required energy
+//        //I am just going to use the STM32 minimum operating voltage (1.5V) to set the required energy (datasheet in data_sheet.hpp)
+//        //this is still bad bc our ENERGY/cycle calculations assumes that the voltage across the CPU is constant
+//        auto required_energy =  0.5 * battery.capacitance() * (CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE * CORTEX_MOPLUS_MINIMUM_OPERATING_VOLTAGE);//32*CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE + CORTEX_M0PLUS_ENERGY_FLASH*(100);  //32 is max number of cycles for customTest (multiply instruction takes 32  cycles!!!)
+//        if(battery.energy_stored() >=  battery.maximum_energy_stored() - required_energy)
+//        {
+//            active = true;
+//        }
+//        else if (battery.energy_stored() < required_energy)
+//        {
+//
+//            active = false;
+//        }
+//        return active;
     }
     /**
      * Return whether or not system will backup after encountering a WFI instruction
@@ -156,7 +166,7 @@ public:
         //std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
         active_stats.energy_for_backups += energy_for_backup ;
 
-        battery.consume_energy(energy_for_backup);
+       // battery.consume_energy(energy_for_backup);
         num_addresses_touched = thumbulator::used_RAM_addresses.size();
         thumbulator::used_RAM_addresses.clear(); //at the next backup, only the RAM touched in that task will be backed up
         //return the number of cycles to backup al the used parts of RAM
@@ -183,10 +193,10 @@ public:
         double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(num_addresses_touched);
 
         stats->models.back().energy_for_restore = energy_for_restore;
-        battery.consume_energy(energy_for_restore);
+        //battery.consume_energy(energy_for_restore);
 
         //return the number of cycles to backup al the used parts of RAM
-        return (num_addresses_touched)* TIMING_MEM;
+        return 0;//(num_addresses_touched)* TIMING_MEM;
     }
 
     double estimate_progress(eh_model_parameters const &eh) const override
@@ -211,7 +221,7 @@ public:
 
 private:
     capacitor battery;
-    bool active;
+    bool active = false;
     uint64_t last_tick = 0u;
     uint64_t last_backup_cycle = 0u;
     uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];

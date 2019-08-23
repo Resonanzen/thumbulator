@@ -13,6 +13,7 @@ std::chrono::nanoseconds ehsim::simul_timer::current_system_time() {
 void ehsim::simul_timer::inactive_tick() {
     system_time += 1ms;
     last_ms_mark += 1ms;
+    elapsed_time += 1ms;
 }
 
 
@@ -20,6 +21,7 @@ void ehsim::simul_timer::active_tick(uint64_t cycles){
     uint64_t elapsed_nanoseconds = (1.0/system_frequency)*cycles*1e9;
 
     std::chrono::nanoseconds time_to_increase(elapsed_nanoseconds);
+    elapsed_time += time_to_increase;
     system_time += time_to_increase;
 }
 
@@ -34,3 +36,11 @@ bool ehsim::simul_timer::harvest_while_active() {
     return false;
 
 }
+//get the elapsed time since last capacitor voltage update
+//this zeroes out the elapsed_time class variable
+std::chrono::nanoseconds ehsim::simul_timer::get_elapsed_time(){
+    std::chrono::nanoseconds temp_elapsed_time = elapsed_time;
+    elapsed_time = 0ns;
+    return temp_elapsed_time;
+
+};

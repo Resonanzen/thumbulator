@@ -26,6 +26,11 @@ namespace ehsim {
          * Return the system time
          * @return std::chrono::nanoseconds
          */
+
+        std::chrono::nanoseconds get_elapsed_time();
+
+
+
         std::chrono::nanoseconds current_system_time(); //return system time
 
         /**
@@ -42,9 +47,9 @@ namespace ehsim {
         std::chrono::milliseconds last_ms_mark = 0ms;
         std::chrono::nanoseconds system_time = 0ns; //nanoseconds since start of simulation
 
-
-
         uint64_t system_frequency;
+        //elapsed time since last voltage condition update
+        std::chrono::nanoseconds elapsed_time = 0ns;
     };
 }
 

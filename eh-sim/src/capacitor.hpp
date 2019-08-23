@@ -7,6 +7,8 @@
 
 namespace ehsim {
 
+
+
 /**
  * Calculate the energy stored in a capacitor.
  *
@@ -81,6 +83,13 @@ public:
   {
     m_voltage = sqrt(2 * m_energy / m_capacitance);
   }
+  /**
+   * Updates voltage across capacitor based on current charge it holds
+   */
+  void update_voltage_v2()
+  {
+      m_voltage = m_charge / m_capacitance;
+  }
 
   /**
    * Charge the capacitor with the given current (Amperes) for an amount of time (seconds).
@@ -125,6 +134,8 @@ private:
   double m_max_energy;
   // stored energy in J
   double m_energy;
+  // amount of charge stored on capacitor in C
+  double m_charge;
 
   /**
  * Calculate the energy (Joules) stored in the capacitor.

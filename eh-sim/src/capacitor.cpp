@@ -38,4 +38,22 @@ namespace ehsim {
 
     return can_harvest;
   }
+
+
+  void capacitor::charge(double current, double time) {
+    assert (current >= 0);
+
+    double can_charge = current*time;
+    m_charge += can_charge;
+    update_voltage_v2();
+  }
+
+  void capacitor::drain(double current, double time){
+    assert (current >= 0);
+
+    double can_charge = current*time;
+    m_charge -= can_charge;
+    update_voltage_v2();
+  }
+
 }

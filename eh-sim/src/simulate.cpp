@@ -252,6 +252,7 @@ bool making_forward_progress(stats_bundle *stats){
     stats->dead_tasks++;
     if (stats->dead_tasks == 2){
       std::cout << "DEAD TASK! Not progressing" << "\n";
+      std::cout << "You can check the size of your tasks by turning off energy consumption in capacitor::consume, and printing out the task lengths in simulate()\n";
       return false;
     }
   }
@@ -261,11 +262,14 @@ bool making_forward_progress(stats_bundle *stats){
 
   return true;
 }
+//the value of the current source at this time
+double get_current_input(ehsim::voltage_trace power, simul_timer simul_timer){
+      auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
 
+      double current_source_value = env_voltage/(30000);
 
-
-
-
+      return current_source_value;
+}
 
 
 stats_bundle simulate(char const *binary_file,
@@ -292,13 +296,11 @@ stats_bundle simulate(char const *binary_file,
   // Execute the program
   std::cout << "Starting simulation\n";
   // Simulation will terminate when it executes insn == 0xBFAA
-  std::cout << "energy_used_per_cycle " << ehsim::CORTEX_M0PLUS_INSTRUCTION_ENERGY_PER_CYCLE << "\n";
   thumbulator::EXIT_INSTRUCTION_ENCOUNTERED = false;
   while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
-
-
-
-    energy_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().energy_stored()});
+    /*recording voltage every millisecond. You can change how often the voltage is recorded, but the
+    recording should be in milliseconds to compare with simulink */
+    energy_time_map.insert({to_milliseconds(simul_timer.current_system_time()).count()*1e-3, scheme->get_battery().voltage()});
 
     if (scheme->is_active(&stats)) {
 
@@ -320,18 +322,21 @@ stats_bundle simulate(char const *binary_file,
       // update stats after instruction
       update_stats_after_instruction(&stats, instruction_ticks);
 
-      // consume energy for execution
-      scheme->execute_instruction(instruction_ticks, &stats);
-
-      // execute backup
+//      // consume energy for execution
+//     // scheme->execute_instruction(instruction_ticks, &stats);
+//
+//      // execute backup
       if (scheme->will_backup(&stats)) {
-        backup_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().energy_stored()});
+        backup_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().voltage()});
         backup_and_collect_stats(&stats, scheme, &simul_timer);
       }
+        double input_current = get_current_input(power, simul_timer);
+        double load_current_drain = 1.3e-3;
 
-      if (simul_timer.harvest_while_active()) {
-          harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
-      }
+        double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
+      //  std::cout << elapsed_time << "\n";
+        scheme->get_battery().charge(input_current,elapsed_time);
+        scheme->get_battery().drain(load_current_drain, elapsed_time);
 
     } else {
       // system was just on, start of off period
@@ -344,9 +349,9 @@ stats_bundle simulate(char const *binary_file,
         //by definition, if you've turned off, you've turned off in the middle of a task
         task_history_tracker.task_failed(&stats);
 
-        fprintf(stderr, "Turning off at state pc= %X\n", thumbulator::cpu_get_pc() - 0x5);
-        update_active_period_stats(&stats, scheme);
-        std::cout << "Active period finished in " << stats.models.back().time_total << " cycles.\n";
+       fprintf(stderr, "Turning off at state pc= %X\n", thumbulator::cpu_get_pc() - 0x5);
+       update_active_period_stats(&stats, scheme);
+       std::cout << "Active period finished in " << stats.models.back().time_total << " cycles.\n";
 
         if (!making_forward_progress(&stats)) {
           break;
@@ -357,14 +362,19 @@ stats_bundle simulate(char const *binary_file,
 
       simul_timer.inactive_tick();
 
-      harvest_energy_from_environment(&simul_timer, power, &stats, scheme);
+
+      //update current conditions
+      double input_current = get_current_input(power, simul_timer);
+      double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
+      scheme->get_battery().charge(input_current,elapsed_time);
+
     }
   }
 
 
 
 
-//  //print out task pattern data
+ //print out task pattern data
   std::ofstream task_pattern_data;
   task_pattern_data.open("task_pattern_data.txt");
   //print out all of the task PCs:
@@ -400,6 +410,7 @@ stats_bundle simulate(char const *binary_file,
   std::ofstream time_energy_data;
   time_energy_data.open("time_energy_data.txt");
   for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
+      time_energy_data.precision(10);
       time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
   }
 //
