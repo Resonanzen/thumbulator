@@ -68,6 +68,21 @@ public:
     return m_voltage;
   }
 
+  void set_voltage(double voltage)
+  {
+    m_voltage = voltage;
+  }
+
+  double charge() const
+  {
+    return m_charge;
+  }
+
+  void set_charge(double charge)
+  {
+    m_charge = charge;
+  }
+
   /**
    * @return The amount of stored energy in J.
    */

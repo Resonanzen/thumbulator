@@ -101,12 +101,19 @@ public:
     {
 
     }
+
+  std::string &get_scheme_name() override
+  {
+    return scheme_name;
+  }
+
 private:
   capacitor battery;
 
   uint64_t last_backup_cycle = 0u;
 
   bool active = false;
+  std::string scheme_name = "on_demand";
 };
 }
 #endif //EH_SIM_ON_DEMAND_ALL_BACKUP_HPP

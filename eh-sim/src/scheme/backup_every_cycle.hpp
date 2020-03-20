@@ -112,10 +112,16 @@ public:
 
   }
 
+  std::string &get_scheme_name() override
+  {
+    return scheme_name;
+  }
+
 private:
   capacitor battery;
   bool active;
   uint64_t last_backup_cycle = 0u;
+  std::string scheme_name = "backup_every_cycle";
 
 };
 }

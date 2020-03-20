@@ -11,6 +11,7 @@ namespace thumbulator {
 uint32_t RAM[RAM_SIZE_BYTES >> 2];
 std::vector<uint32_t> flash_writes_during_backup;
 std::unordered_set<uint32_t> used_RAM_addresses;
+std::unordered_set<uint32_t> used_FLASH_addresses;
 
 std::function<uint32_t(uint32_t, uint32_t)> ram_load_hook;
 std::function<uint32_t(uint32_t, uint32_t, uint32_t)> ram_store_hook;
@@ -38,6 +39,12 @@ void ram_store(uint32_t address, uint32_t value)
 
   used_RAM_addresses.insert(address);
   RAM[(address & RAM_ADDRESS_MASK) >> 2] = value;
+}
+
+void flash_store(uint32_t address, uint32_t value)
+{
+  used_FLASH_addresses.insert(address);
+  FLASH_MEMORY[(address & FLASH_ADDRESS_MASK) >> 2] = value;
 }
 
 // Memory access functions assume that RAM has a higher address than Flash
@@ -145,7 +152,8 @@ void store(uint32_t address, uint32_t value)
       terminate_simulation(1);
     }
 
-    FLASH_MEMORY[(address & FLASH_ADDRESS_MASK) >> 2] = value;
+
+    flash_store(address, value);
     //fprintf(stderr, "Should not write to flash memory! \n");
     //terminate_simulation(1);
   }

@@ -78,8 +78,14 @@ public:
 
     }
 
+  std::string &get_scheme_name() override
+  {
+    return scheme_name;
+  }
+
 private:
   capacitor battery;
+  std::string scheme_name = "magical";
 };
 }
 

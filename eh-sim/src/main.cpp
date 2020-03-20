@@ -85,9 +85,12 @@ int main(int argc, char *argv[])
       {"tau_B", {"--tau-b"}, "the backup period for the parametric scheme", 1},
       {"binary", {"-b", "--binary"}, "path to application binary", 1},
       {"output", {"-o", "--output"}, "output file", 1,},
+      {"output_folder", {"--output-folder"}, "output folder", 1,},
       {"system_frequency", {"-f", "--frequency"}, "System Frequency", 1,},
       {"active_periods_to_simulate",{"--active-periods"}, "Active Periods to simulate", 1},
-      {"check_memory",{"--check-mem"},"Check memory consistency", 0} //check memory consistency within the simulator option
+      {"check_memory",{"--check-mem"},"check memory consistency", 0}, //check memory consistency within the simulator option
+      {"oracle",{"--oracle"},"always back up at ideal time", 0}, //run in oracle state: perfect backup timing
+      {"pred",{"--pred"},"predict when power will be lost", 0} //run in simple predict state
   }};
 
 
@@ -107,26 +110,36 @@ int main(int argc, char *argv[])
         check_mem = true;
     }
 
+    bool oriko = false;
+    if (options["oracle"]){
+      oriko = true;
+    }
+
+    bool yachi = false;
+    if (options["pred"]){
+      yachi = true;
+    }
 
     auto const path_to_binary = options["binary"];
-
     auto const path_to_voltage_trace = options["voltages"];
+
+    std::string output_folder;
+    if(options["output_folder"].count() != 0){
+      output_folder = options["output_folder"].as<std::string>();
+    }
+
     std::chrono::milliseconds sampling_period(options["rate"]);
 
     if (options["rate"].count() == 0){
       sampling_period = 1ms;
     }
 
-
-    bool full_sim;
+    bool full_sim = true;
     uint64_t active_periods_to_simulate = 0;
     if (options["active_periods_to_simulate"].count() != 0){
         active_periods_to_simulate = options["active_periods_to_simulate"].as<uint64_t>();
         full_sim = false;
-    }else{
-        full_sim == true;
     }
-
 
     //double const trace_period = 0.001;
     //double const trace_resistance = 30000;
@@ -165,16 +178,10 @@ int main(int argc, char *argv[])
 
 
     std::cout <<"Running with scheme " << scheme_select << ":\n";
-    auto const stats = ehsim::simulate(path_to_binary, power, scheme.get(), full_sim, active_periods_to_simulate, scheme_select);
+    auto const stats = ehsim::simulate(path_to_binary, output_folder, power, scheme.get(), full_sim, oriko, yachi, active_periods_to_simulate);
     //copy memory into separate vector, so it can be compared against magic laterd
     std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(task_ram));
     std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(task_flash));
-
-    std::cout << "CPU instructions executed: " << stats.cpu.instruction_count << "\n";
-    std::cout << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
-    std::cout << "Total time (ns): " << stats.system.time.count() << "\n";
-    std::cout << "Energy harvested (J): " << stats.system.energy_harvested  << "\n";
-    std::cout << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
 
     std::string output_file_name(scheme_select + ".csv");
     if(options["output"].count() > 0) {
@@ -215,10 +222,9 @@ int main(int argc, char *argv[])
 
     if (check_mem) {
         std::cout << "\nRunning simulation with magic scheme: \n";
-        std::string scheme_selected = "magic";
         std::unique_ptr<ehsim::eh_scheme> magic_scheme = nullptr;
         magic_scheme = std::make_unique<ehsim::magical_scheme>();
-        auto const stats =   ehsim::simulate(path_to_binary, power, magic_scheme.get(), full_sim, active_periods_to_simulate, scheme_selected);
+        auto const stats =   ehsim::simulate(path_to_binary, output_folder, power, magic_scheme.get(), full_sim, oriko, yachi, active_periods_to_simulate);
 
 
 

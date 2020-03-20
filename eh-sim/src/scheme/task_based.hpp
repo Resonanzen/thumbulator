@@ -42,6 +42,7 @@ public:
     {
         return battery;
     }
+
     /**
      * return the current clock frequency
      * @return uint32_t
@@ -97,8 +98,6 @@ public:
      */
     bool is_active(stats_bundle *stats) override
     {
-
-
         if (battery.voltage() >= 4.5){
             active = true;
         }else if (battery.voltage() < 1.8){
@@ -155,21 +154,24 @@ public:
         active_stats.time_between_backups += stats->cpu.cycle_count - last_backup_cycle;
         last_backup_cycle = stats->cpu.cycle_count;
 
+        //magical backup
         std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(backup_RAM));
         std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(backup_FLASH));
         backup_ARCHITECTURE = thumbulator::cpu;
 
-        double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH*(thumbulator::used_RAM_addresses.size());
-      //  std::cout << "BACKUP: " << thumbulator::used_RAM_addresses.size() << " " << energy_for_backup << "\n";
-       //
-       // std::cout << "Backup at PC = " << thumbulator::cpu.gpr[15] - 5 <<std::endl;
-        //std::cout <<"Bytes to backup: " << thumbulator::used_RAM_addresses.size() << "\n";
-        active_stats.energy_for_backups += energy_for_backup ;
+        //  std::cout << "BACKUP: " << thumbulator::used_RAM_addresses.size() << " " << energy_for_backup << "\n";
+        //
+        // std::cout << "Backup at PC = " << thumbulator::cpu.gpr[15] - 5 <<std::endl;
 
-       // battery.consume_energy(energy_for_backup);
-        num_addresses_touched = thumbulator::used_RAM_addresses.size();
+        num_addresses_touched = thumbulator::used_RAM_addresses.size() + thumbulator::used_FLASH_addresses.size();
         thumbulator::used_RAM_addresses.clear(); //at the next backup, only the RAM touched in that task will be backed up
-        //return the number of cycles to backup al the used parts of RAM
+        thumbulator::used_FLASH_addresses.clear(); //at the next backup, only the FLASH touched in that task will be backed up
+
+        double energy_for_backup =  CORTEX_M0PLUS_ENERGY_FLASH * (num_addresses_touched); //pretend we are only using NVM for now
+        active_stats.energy_for_backups += energy_for_backup ;
+        // battery.consume_energy(energy_for_backup);
+
+        //return the number of cycles to backup all the used parts of RAM and FLASH
         return (num_addresses_touched)* TIMING_MEM;
     }
     /**
@@ -190,13 +192,12 @@ public:
         thumbulator::cpu = backup_ARCHITECTURE;
         std::cout << "RESTORE! Restore at PC = "<< std::hex << thumbulator::cpu_get_pc() -0x5 << "\n";
         std::cout << std::dec;
-        double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH*(num_addresses_touched);
-
-        stats->models.back().energy_for_restore = energy_for_restore;
+        double energy_for_restore =  CORTEX_M0PLUS_ENERGY_FLASH * (num_addresses_touched);
+        //stats->models.back().energy_for_restore = energy_for_restore;
         //battery.consume_energy(energy_for_restore);
 
         //return the number of cycles to backup al the used parts of RAM
-        return 0;//(num_addresses_touched)* TIMING_MEM;
+        return num_addresses_touched * TIMING_MEM;
     }
 
     double estimate_progress(eh_model_parameters const &eh) const override
@@ -217,19 +218,24 @@ public:
         backup_ARCHITECTURE = thumbulator::cpu;
     }
 
-
+    std::string &get_scheme_name() override
+    {
+      return scheme_name;
+    }
 
 private:
+
     capacitor battery;
+    uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
+    uint32_t backup_FLASH[FLASH_SIZE_BYTES >> 2];
     bool active = false;
     uint64_t last_tick = 0u;
     uint64_t last_backup_cycle = 0u;
-    uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
-    uint32_t backup_FLASH[FLASH_SIZE_BYTES>>2];
     thumbulator::cpu_state backup_ARCHITECTURE = thumbulator::cpu;
     uint64_t system_frequency = CORTEX_M0PLUS_FREQUENCY;
     bool branch_taken = thumbulator::BRANCH_WAS_TAKEN;
     uint64_t num_addresses_touched = 0;
+    std::string scheme_name = "task_based";
 };
 }
 

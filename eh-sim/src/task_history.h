@@ -8,12 +8,8 @@
 #include <map>
 #include <vector>
 #include "stats.hpp"
-#include "simul_timer.h"
-#include <chrono>
-using namespace std::chrono_literals;
+
 namespace ehsim{
-
-
 
     class task_history_tracker{
     public:
@@ -30,16 +26,15 @@ namespace ehsim{
 
         //update the task history after power shuts off during an active period
         void task_failed(stats_bundle *stats);
+
+        uint64_t get_num_failed();
     private:
         //pc of the current task
         uint64_t current_task = 0;
 
         //length of all the tasks run in terms of cycles, in order of when they were completed
         std::vector<uint64_t> task_lengths;
-
     };
-
-
 }
 
 #endif //ENERGY_HARVESTING_TASK_HISTORY_H

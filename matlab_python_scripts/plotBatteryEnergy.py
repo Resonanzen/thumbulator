@@ -16,24 +16,16 @@ file = open(inputFilePath, "r");
 lines = file.read().splitlines()
 file.close()
 
-
 energy_in_battery = []
 x_axis = []
-
-
 backup_X = []
 backup_Y = []
-
-
-
 traceY = []
-
 
 num_backups = 0;
 count = 0;
 for i in range(len(lines)):
 	
-
 	if (lines[i].startswith("Time")):
 		x_axis.append(float(lines[i].split()[1]));
 		energy_in_battery.append(float(lines[i].split()[2]));
@@ -43,7 +35,6 @@ for i in range(len(lines)):
 		backup_Y.append(float(lines[i].split()[2]));
 
 f1 = plt.figure(1);
-print(backup_X)
 #plot line graph
 print("DONE!")
 plt.plot(x_axis,energy_in_battery)

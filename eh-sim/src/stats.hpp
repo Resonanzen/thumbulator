@@ -33,7 +33,15 @@ struct system_stats {
    */
   double energy_remaining = 0.0;
 
+  /**
+  * Total time spent making forward progress
+  */
+  std::chrono::nanoseconds total_forward_progress_time{0};
 
+  /**
+* Total time spent on re-execution of failed task after restore
+*/
+  std::chrono::nanoseconds total_re_execution_time{0};
 
 };
 
@@ -177,7 +185,7 @@ struct stats_bundle {
   int dead_tasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
   bool backup_requested = true;
   bool recently_backed_up= false;
-  uint64_t last_backup_time = 0;
+  uint64_t current_task_start_time = 0;
   uint64_t dead_cycles = 0;
   /**
    * Model of multiple active periods.

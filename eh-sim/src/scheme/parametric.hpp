@@ -132,6 +132,11 @@ public:
 
     }
 
+  std::string &get_scheme_name() override
+  {
+    return scheme_name;
+  }
+
 private:
   capacitor battery;
   bool active = false;
@@ -144,6 +149,8 @@ private:
 
   thumbulator::cpu_state architectural_state{};
   std::unordered_map<uint32_t, uint32_t> stores;
+
+  std::string scheme_name = "parametric";
 
   void power_on()
   {

@@ -33,6 +33,8 @@ public:
   virtual uint64_t restore(stats_bundle *stats) = 0;
 
   virtual double estimate_progress(eh_model_parameters const &) const = 0;
+
+  virtual std::string &get_scheme_name() = 0;
 };
 }
 

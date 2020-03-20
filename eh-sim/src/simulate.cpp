@@ -35,7 +35,7 @@ void load_program(char const *file_name)
  *
  * @return void
  */
-void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundle* stats)
+void initialize_system(char const *binary_file, eh_scheme * scheme)
 {
   // Reset memory, then load program to memory
   std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
@@ -50,9 +50,6 @@ void initialize_system(char const *binary_file, eh_scheme * scheme , stats_bundl
 
   // PC seen is PC + 4
   thumbulator::cpu_set_pc(thumbulator::cpu_get_pc() + 0x4);
-
-
-
 }
 
 /**
@@ -161,14 +158,13 @@ void backup_and_collect_stats(ehsim::stats_bundle * stats, ehsim::eh_scheme *sch
   stats->dead_tasks = 0;
   auto const backup_time = scheme->backup(stats);
 
-  stats->last_backup_time = stats->cpu.cycle_count;
+  stats->current_task_start_time = stats->cpu.cycle_count;
   auto &active_stats = stats->models.back();
   active_stats.time_for_backups += backup_time;
-
-  simul_timer->active_tick(backup_time);
-
   active_stats.energy_forward_progress = active_stats.energy_for_instructions;
   active_stats.time_forward_progress = stats->cpu.cycle_count - active_stats.active_start;
+  simul_timer->active_tick(backup_time);
+  stats->cpu.cycle_count += backup_time;
 }
 
 //TODO:: Make a charging graph curve the right way
@@ -202,12 +198,14 @@ void start_new_active_period(stats_bundle *stats, eh_scheme *scheme, simul_timer
   stats->models.emplace_back();
   stats->models.back().active_start = stats->cpu.cycle_count;
   stats->models.back().energy_start = scheme->get_battery().energy_stored();
+  stats->current_task_start_time = stats->cpu.cycle_count;
 
   if(stats->cpu.instruction_count != 0) {
     // consume energy for restore
     auto const restore_time = scheme->restore(stats);
     simul_timer->active_tick(restore_time);
     stats->models.back().time_for_restores += restore_time;
+    stats->cpu.cycle_count += restore_time;
   }
 }
 
@@ -236,7 +234,7 @@ void update_final_stats(stats_bundle *stats, eh_scheme * scheme, simul_timer * s
                                         active_period.energy_for_restore;
 
     active_period.progress = active_period.energy_forward_progress / active_period.energy_consumed;
-      active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
+    active_period.eh_progress = scheme->estimate_progress(eh_model_parameters(active_period));
 
     stats->system.energy_remaining = scheme->get_battery().energy_stored();
     stats->system.time = simul_timer->current_system_time();
@@ -264,220 +262,316 @@ bool making_forward_progress(stats_bundle *stats){
 }
 //the value of the current source at this time
 double get_current_input(ehsim::voltage_trace power, simul_timer simul_timer){
-      auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
+    auto env_voltage = power.get_voltage(to_milliseconds(simul_timer.current_system_time()));
 
-      double current_source_value = env_voltage/(30000);
+    double current_source_value = env_voltage/(30000);
 
-      return current_source_value;
+    return current_source_value;
 }
 
+//backup: PC, RAM, NVM, battery, stats, simul timer, energy time map, backup time map, task history tracker
+sim_backup_bundle sim_backup(
+    eh_scheme *scheme,
+    stats_bundle stats,
+    simul_timer simul,
+    std::map<double, double> energy_time_map,
+    std::map<double, double> backup_time_map,
+    task_history_tracker task_history){
+
+    sim_backup_bundle oriko_box{};
+    oriko_box.backup_ARCHITECTURE = thumbulator::cpu;
+    //std::copy(std::begin(thumbulator::RAM), std::end(thumbulator::RAM), std::begin(oriko_box.backup_RAM));
+    //std::copy(std::begin(thumbulator::FLASH_MEMORY), std::end(thumbulator::FLASH_MEMORY), std::begin(oriko_box.backup_FLASH));
+    oriko_box.backup_battery_voltage = scheme->get_battery().voltage();
+    oriko_box.backup_battery_charge = scheme->get_battery().charge();
+    oriko_box.backup_stats = stats;
+    oriko_box.backup_simul_timer = simul;
+    oriko_box.backup_energy_time_map = energy_time_map;
+    oriko_box.backup_backup_time_map = backup_time_map;
+    oriko_box.backup_task_history = task_history;
+    return oriko_box;
+}
+
+void sim_restore(sim_backup_bundle oriko_box,
+    eh_scheme *scheme,
+    stats_bundle &stats,
+    simul_timer &simul,
+    std::map<double, double> &energy_time_map,
+    std::map<double, double> &backup_time_map,
+    task_history_tracker &task_history){
+
+    thumbulator::cpu = oriko_box.backup_ARCHITECTURE;
+    //std::copy(std::begin(scheme->backup_RAM), std::end(oriko_box.backup_RAM), std::begin(thumbulator::RAM));
+    //std::copy(std::begin(oriko_box.backup_FLASH), std::end(oriko_box.backup_FLASH), std::begin(thumbulator::FLASH_MEMORY));
+    scheme->restore(&stats);
+    scheme->get_battery().set_voltage(oriko_box.backup_battery_voltage);
+    scheme->get_battery().set_charge(oriko_box.backup_battery_charge);
+    stats = oriko_box.backup_stats;
+    simul = oriko_box.backup_simul_timer;
+    energy_time_map = oriko_box.backup_energy_time_map ;
+    backup_time_map = oriko_box.backup_backup_time_map;
+    task_history = oriko_box.backup_task_history;
+}
 
 stats_bundle simulate(char const *binary_file,
+    std::string output_folder,
     ehsim::voltage_trace const &power,
-    eh_scheme *scheme, bool full_sim, uint64_t active_periods_to_simulate, std::string scheme_select) {
-  using namespace std::chrono_literals;
+    eh_scheme *scheme,
+    bool full_sim,
+    bool oriko,
+    bool yachi,
+    uint64_t active_periods_to_simulate){
 
+    using namespace std::chrono_literals;
 
-  // init stats
-  stats_bundle stats{};
-  stats.system.time = 0ns;
-  int64_t active_periods = 0;
-  simul_timer simul_timer(scheme->clock_frequency());
-  task_history_tracker task_history_tracker;
-  std::map<double,double> energy_time_map;
-  std::map<double, double>  backup_time_map; //time of backup and energy at that point
+    // init stats
+    stats_bundle stats{};
+    sim_backup_bundle oriko_box{};
+    stats.system.time = 0ns;
+    int64_t active_periods = 0;
+    simul_timer simul_timer(scheme->clock_frequency());
+    task_history_tracker task_history_tracker;
+    std::map<double, double> energy_time_map; //record energy every ms
+    std::map<double, double> backup_time_map; //record energy at time of backup
+    bool just_backed_up = false;
+    bool force_off = false;
+    int64_t yachi_counter = 0;
+    int64_t yachi_target = 0;
+    int64_t yachi_reset = 0;
+    std::chrono::nanoseconds beginnning_of_task{0};
 
-  // init system
-  initialize_system(binary_file, scheme, &stats);
-  auto was_active = false;
+    // init system
+    initialize_system(binary_file, scheme);
+    auto was_active = false;
 
+    std::cout.setf(std::ios::unitbuf);
+    // Execute the program
+    std::cout << "Starting simulation\n";
+    // Simulation will terminate when it executes insn == 0xBFAA
+    thumbulator::EXIT_INSTRUCTION_ENCOUNTERED = false;
 
-  std::cout.setf(std::ios::unitbuf);
-  // Execute the program
-  std::cout << "Starting simulation\n";
-  // Simulation will terminate when it executes insn == 0xBFAA
-  thumbulator::EXIT_INSTRUCTION_ENCOUNTERED = false;
-  while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
-    /*recording voltage every millisecond. You can change how often the voltage is recorded, but the
-    recording should be in milliseconds to compare with simulink */
-    energy_time_map.insert({to_milliseconds(simul_timer.current_system_time()).count()*1e-3, scheme->get_battery().voltage()});
+    // main execution loop
+    while (!thumbulator::EXIT_INSTRUCTION_ENCOUNTERED) {
+        /*recording voltage every millisecond. You can change how often the voltage is recorded, but the
+        recording should be in milliseconds to compare with simulink */
+        energy_time_map.insert({to_milliseconds(simul_timer.current_system_time()).count()*1e-3, scheme->get_battery().voltage()});
 
-    if (scheme->is_active(&stats)) {
+        if (scheme->is_active(&stats) && !force_off) {
+            // system just powered on, start of active period
+            if (!was_active) {
+                active_periods++;
+                if (active_periods == active_periods_to_simulate && !full_sim){
+                    break;
+                }
+                std::cout << "Powering on\n";
+                //track the start of a new period
+                start_new_active_period(&stats, scheme, &simul_timer);
+            }
+            was_active = true;
 
-      // system just powered on, start of active period
-      if (!was_active) {
-        active_periods++;
-          if (active_periods == active_periods_to_simulate && !full_sim){
-              break;
-          }
-        std::cout << "Powering on\n";
-        //track the start of a new period
-        start_new_active_period(&stats, scheme, &simul_timer);
-      }
-      was_active = true;
+            // run one instruction
+            auto const instruction_ticks = step_cpu(scheme, &stats, &task_history_tracker);
+            simul_timer.active_tick(instruction_ticks);
+            // update stats after instruction
+            update_stats_after_instruction(&stats, instruction_ticks);
+            if(just_backed_up){
+                just_backed_up = false;
+            }
 
-      // run one instruction
-      auto const instruction_ticks = step_cpu(scheme, &stats, &task_history_tracker);
-      simul_timer.active_tick(instruction_ticks);
-      // update stats after instruction
-      update_stats_after_instruction(&stats, instruction_ticks);
+            // consume energy for execution
+            // scheme->execute_instruction(instruction_ticks, &stats)
+            // execute backup
+            if (scheme->will_backup(&stats)) {
+                backup_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().voltage()});
+                backup_and_collect_stats(&stats, scheme, &simul_timer);
 
-//      // consume energy for execution
-//     // scheme->execute_instruction(instruction_ticks, &stats);
-//
-//      // execute backup
-      if (scheme->will_backup(&stats)) {
-        backup_time_map.insert({simul_timer.current_system_time().count()*1E-9, scheme->get_battery().voltage()});
-        backup_and_collect_stats(&stats, scheme, &simul_timer);
-      }
-        double input_current = get_current_input(power, simul_timer);
-        double load_current_drain = 1.3e-3;
+                just_backed_up = true;
 
-        double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
-      //  std::cout << elapsed_time << "\n";
-        scheme->get_battery().charge(input_current,elapsed_time);
-        scheme->get_battery().drain(load_current_drain, elapsed_time);
+                //if sim is operating in oracle mode, need to back up sim stats to return to this point in case of failure
+                //backup: PC, RAM, NVM, battery, stats, simul timer, energy time map, backup time map, task history tracker
+                if(oriko){
+                    oriko_box = sim_backup(scheme, stats, simul_timer, energy_time_map, backup_time_map, task_history_tracker);
+                }
+                if(yachi){
+                    yachi_counter++;
+                    if(yachi_counter != 0 && yachi_target != 0 && yachi_counter >= yachi_target){
+                        force_off = true;
+                        yachi_counter = 0;
+                        yachi_reset++;
+                    }
+                    if(yachi_reset == 10){
+                        yachi_reset = 0;
+                        yachi_target = 0;
+                    }
+                }
+            }
+            double input_current = get_current_input(power, simul_timer);
+            double load_current_drain = 1.3e-3;
 
-    } else {
-      // system was just on, start of off period
-      if (was_active) {
+            double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
+            //  std::cout << elapsed_time << "\n";
+            scheme->get_battery().charge(input_current,elapsed_time);
+            scheme->get_battery().drain(load_current_drain, elapsed_time);
 
-        //wipe out volatile elements of the system
-        std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
-        thumbulator::cpu_reset();
-
-        //by definition, if you've turned off, you've turned off in the middle of a task
-        task_history_tracker.task_failed(&stats);
-
-       fprintf(stderr, "Turning off at state pc= %X\n", thumbulator::cpu_get_pc() - 0x5);
-       update_active_period_stats(&stats, scheme);
-       std::cout << "Active period finished in " << stats.models.back().time_total << " cycles.\n";
-
-        if (!making_forward_progress(&stats)) {
-          break;
         }
+        else {
+            if(force_off){
+                force_off = false;
+            }
+            // system was just on, start of off period
+            if (was_active) {
+                //check if you've turned off in the middle of a task
+                if(!just_backed_up) {
+                    //oracle sim: reverse failed task
+                    if(oriko){
+                        sim_restore(oriko_box, scheme, stats, simul_timer, energy_time_map, backup_time_map, task_history_tracker);
+                        force_off = true;
+                        just_backed_up = true;
+                        continue;
+                    }
+                    // not oracle: record failed task
+                    else {
+                        task_history_tracker.task_failed(&stats);
+                        if(yachi){
+                            //yachi_target = task_history_tracker.get_num_failed();
+                            yachi_target = yachi_counter;
+                            yachi_counter = 0;
+                        }
+                    }
 
-      }
-      was_active = false;
+                }
+                //wipe out volatile elements of the system
+                std::memset(thumbulator::RAM, 0, sizeof(thumbulator::RAM));
+                thumbulator::cpu_reset();
 
-      simul_timer.inactive_tick();
+                update_active_period_stats(&stats, scheme);
+                std::cout << "Active period finished in " << stats.models.back().time_total << " cycles.\n";
 
+                if (!making_forward_progress(&stats)) {
+                    break;
+                }
 
-      //update current conditions
-      double input_current = get_current_input(power, simul_timer);
-      double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
-      scheme->get_battery().charge(input_current,elapsed_time);
-
+            }
+            was_active = false;
+            simul_timer.inactive_tick();
+            //update current conditions
+            double input_current = get_current_input(power, simul_timer);
+            double elapsed_time = simul_timer.get_elapsed_time().count() *1e-9;
+            scheme->get_battery().charge(input_current,elapsed_time);
+        }
     }
-  }
+    update_final_stats(&stats, scheme, &simul_timer);
 
-
-
-
- //print out task pattern data
-  std::ofstream task_pattern_data;
-  task_pattern_data.open("task_pattern_data.txt");
-  //print out all of the task PCs:
-  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end();it++){
-      task_pattern_data << it->first << " ";
-  }
-  task_pattern_data << "\n";
-
-  task_pattern_data << "Task Iteration Result" << "\n";
-
-  for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
-
-
-    std::vector <int> task_history = it->second;
-    for (int i = 0; i< task_history.size(); i++){
-       task_pattern_data << it->first <<" "<< i << " ";
-
-      if (task_history[i] == 1){
-        task_pattern_data << "Success";
-      }else{
-        task_pattern_data << "Fail";
-      }
-      task_pattern_data << "\n";
+    //get benchmark name
+    std::string binary_file_name(binary_file);
+    size_t i = binary_file_name.rfind('/', binary_file_name.length());
+    if (i != std::string::npos) {
+        binary_file_name = binary_file_name.substr(i+1, binary_file_name.length() - i);
+    }
+    i = binary_file_name.rfind('.', binary_file_name.length());
+    if (i != std::string::npos) {
+        binary_file_name = binary_file_name.substr(0, i);
+    }
+    if(oriko){
+        binary_file_name = binary_file_name + "_oracle";
+    }
+    if(yachi){
+        binary_file_name = binary_file_name + "_pred";
     }
 
-
-  }
-  task_pattern_data.close();
-
-//
-  //print out time/energy data
-
-  std::ofstream time_energy_data;
-  time_energy_data.open("time_energy_data.txt");
-  for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
-      time_energy_data.precision(10);
-      time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
-  }
-//
-
-  for (auto it = backup_time_map.begin(); it != backup_time_map.end(); it++){
-      time_energy_data << "Backup " << it->first << " " << it->second << "\n";
-  }
-  time_energy_data.close();
-//
-//
-//dump out memory
-
-//dump out all of ram,flash,and register values onto a file
-  std::ofstream memory_dump;
-  std::string file_name = scheme_select + "_memory_dump";
-  memory_dump.open(file_name);
-  memory_dump << "FLASH_MEMORY\n";
-  for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
-      if (i % 10 == 0){
-          memory_dump<< "\n";
-      }
-      memory_dump<< thumbulator::FLASH_MEMORY[i] << " ";
-
-
-  }
-  memory_dump<< "\n";
-  memory_dump << "RAM memory: \n";
-  for (int i = 0; i < RAM_SIZE_ELEMENTS; i++){
-    if (i % 10 == 0){
-      memory_dump<< "\n";
+    //print out task pattern data
+    //first, record last task as success
+    task_history_tracker.update_task_history(0, &stats);
+    std::ofstream task_pattern_data;
+    task_pattern_data.open(output_folder + "task_pattern_data_" + binary_file_name + ".txt");
+    //print out all of the task PCs:
+    for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end();it++){
+        task_pattern_data << it->first << " ";
     }
-    memory_dump<< thumbulator::RAM[i]<< " ";
+    task_pattern_data << "\n";
 
+    task_pattern_data << "Task Iteration Result" << "\n";
 
-  }
+    for (auto it = task_history_tracker.task_history.begin(); it != task_history_tracker.task_history.end(); it++) {
+        std::vector <int> task_history = it->second;
+        for (int i = 0; i< task_history.size(); i++){
+            task_pattern_data << it->first <<" "<< i << " ";
 
-  memory_dump<< "\n";
-  memory_dump << "\n register values: \n";
-  for (int i = 0; i < 16; i++){
-      memory_dump << thumbulator::cpu.gpr[i] << " ";
-  }
-//
-//
-  memory_dump.close();
-  //print out the average task length in terms of cycles
-  /*
-  std::vector<uint64_t> task_lengths = task_history_tracker.get_task_lengths();
-  for (int i = 0; i < task_lengths.size(); i++){
-    std::cout <<task_lengths[i] << "\n";
-  }
-  */
+            if (task_history[i] == 1){
+                    task_pattern_data << "Success";
+            }
+            else{
+                task_pattern_data << "Fail";
+            }
+            task_pattern_data << "\n";
+        }
+    }
+    task_pattern_data.close();
 
+    //print out time/energy data
+    std::ofstream time_energy_data;
+    time_energy_data.open(output_folder + "time_energy_data_" + binary_file_name + ".txt");
+    for (auto it = energy_time_map.begin(); it != energy_time_map.end(); it++){
+        time_energy_data.precision(10);
+        time_energy_data <<"Time/Energy " << it->first << " " << it->second << "\n";
+    }
 
-  //print out some more stats
-  uint64_t cycles_for_instructions = 0;
-  uint64_t cycles_for_restore_and_backup = 0;
-  for (auto it = stats.models.begin(); it != stats.models.end(); it++){
-    cycles_for_instructions += it->time_for_instructions;
-    cycles_for_restore_and_backup += it->time_for_backups;
-    cycles_for_restore_and_backup+=it->time_for_restores;
-  }
-  std::cout <<"total cycles for instructions: " << cycles_for_instructions << "\n";
-  std::cout <<"total cycles for restore and backup: " << cycles_for_restore_and_backup << "\n";
-  std::cout <<"Dead cycles: " << stats.dead_cycles;
-  std::cout << "Done simulation\n";
+    for (auto it = backup_time_map.begin(); it != backup_time_map.end(); it++){
+        time_energy_data << "Backup " << it->first << " " << it->second << "\n";
+    }
+    time_energy_data.close();
 
-  update_final_stats(&stats, scheme, &simul_timer);
-  return stats;
+    //print out all of ram,flash,and register values onto a file
+    std::ofstream memory_dump;
+    std::string file_name = scheme->get_scheme_name() + "_memory_dump";
+    memory_dump.open(file_name);
+    memory_dump << "FLASH_MEMORY\n";
+    for (int i = 0; i < FLASH_SIZE_ELEMENTS; i++){
+          if (i % 10 == 0){
+              memory_dump<< "\n";
+          }
+          memory_dump<< thumbulator::FLASH_MEMORY[i] << " ";
+    }
+    memory_dump<< "\n";
+    memory_dump << "RAM memory: \n";
+    for (int i = 0; i < RAM_SIZE_ELEMENTS; i++){
+        if (i % 10 == 0){
+            memory_dump<< "\n";
+        }
+        memory_dump<< thumbulator::RAM[i]<< " ";
+    }
+
+    memory_dump<< "\n";
+    memory_dump << "\n register values: \n";
+    for (int i = 0; i < 16; i++){
+        memory_dump << thumbulator::cpu.gpr[i] << " ";
+    }
+    memory_dump.close();
+
+    //print out time ratio data
+    uint64_t cycles_for_instructions = 0;
+    uint64_t cycles_for_backup = 0;
+    uint64_t cycles_for_restore = 0;
+    for (auto it = stats.models.begin(); it != stats.models.end(); it++){
+        cycles_for_instructions += it->time_for_instructions;
+        cycles_for_backup += it->time_for_backups;
+        cycles_for_restore += it->time_for_restores;
+    }
+    std::ofstream time_ratio_data;
+    time_ratio_data.open(output_folder + "time_ratio_data_" + binary_file_name + ".txt");
+    time_ratio_data << "Total elapsed time(ns): " << (stats.system.time).count() <<"\n";
+    time_ratio_data << "Total time(ns) for forward progress: " << get_time((cycles_for_instructions - stats.dead_cycles), scheme->clock_frequency()).count() << "\n";
+    time_ratio_data << "Total time(ns) for backup: " << get_time(cycles_for_backup, scheme->clock_frequency()).count()<< "\n";
+    time_ratio_data << "Total time(ns) for restore: " << get_time(cycles_for_restore, scheme->clock_frequency()).count() << "\n";
+    time_ratio_data << "Total time(ns) for re-execution (dead cycles): " << get_time(stats.dead_cycles, scheme->clock_frequency()).count() << "\n";
+    time_ratio_data << "CPU instructions executed (excluding for backups and restores): " << stats.cpu.instruction_count << "\n";
+    //time_ratio_data << "CPU time (cycles): " << stats.cpu.cycle_count << "\n";
+    //time_ratio_data << "Energy harvested (J): " << stats.system.energy_harvested  << "\n";
+    //time_ratio_data << "Energy remaining (J): " << stats.system.energy_remaining  << "\n";
+    time_ratio_data.close();
+
+    std::cout << "Done simulation\n";
+
+    return stats;
 }
 }

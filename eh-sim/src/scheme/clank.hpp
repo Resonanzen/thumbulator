@@ -183,6 +183,11 @@ public:
       architectural_state = thumbulator::cpu;
     }
 
+  std::string &get_scheme_name() override
+  {
+    return scheme_name;
+  }
+
 private:
   capacitor battery;
 
@@ -207,6 +212,8 @@ private:
 
   uint32_t backup_RAM[RAM_SIZE_BYTES >> 2];
   uint32_t backup_FLASH[FLASH_SIZE_BYTES>>2];
+
+  std::string scheme_name = "clank";
 
   void clear_buffers()
   {
