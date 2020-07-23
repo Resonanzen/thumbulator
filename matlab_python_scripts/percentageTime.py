@@ -1,3 +1,8 @@
+# for a given folder, find all time_ratio_data* files and plot percentage of time
+# spent on forward execution, re-execution upon failure and restore, and commits
+# for all benchmarks in folder.
+# args: -p [path to time_ratio_data files]
+
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np

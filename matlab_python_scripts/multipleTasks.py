@@ -1,3 +1,6 @@
+# for a given benchmark, plots th average iteration at which tasks fail, with error bars
+# args: -p task_pattern_data*
+
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np

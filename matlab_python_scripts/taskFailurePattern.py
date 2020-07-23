@@ -1,3 +1,7 @@
+# for a given benchmark, plot each task in benchmark on its own graph,
+# showing the exact iteration at which tasks fail.
+# args: -p task_patter_data*
+
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
