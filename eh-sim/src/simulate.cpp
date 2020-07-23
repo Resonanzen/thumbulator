@@ -67,9 +67,6 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
     throw std::runtime_error("PC moved out of thumb mode.");
   }
 
-  // store current pc
-  auto current_pc = thumbulator::cpu_get_pc();
-
   uint32_t instruction_ticks = 0;
 
   //fetch the instruction to be run
@@ -80,7 +77,7 @@ uint32_t step_cpu(eh_scheme * scheme, stats_bundle *stats, task_history_tracker 
   if(instruction == 0xBF30){
       //std::cout <<"BACKUP encountered at " << thumbulator::cpu_get_pc() - 0x5 << "\n";
       //assume backup takes 0 cycles for now, will be handled in scheme->backup(stats)
-      task_history_tracker ->update_task_history(thumbulator::cpu_get_pc()-0x5, stats);
+      task_history_tracker -> update_task_history(thumbulator::cpu_get_pc()-0x5, stats);
       stats->backup_requested = true;
 
   }else{
@@ -334,10 +331,10 @@ stats_bundle simulate(char const *binary_file,
     std::map<double, double> energy_time_map; //record energy every ms
     std::map<double, double> backup_time_map; //record energy at time of backup
     bool just_backed_up = false;
-    bool force_off = false;
-    int64_t yachi_counter = 0;
-    int64_t yachi_target = 0;
-    int64_t yachi_reset = 0;
+    uint64_t yachi_counter = 0;
+    uint64_t yachi_target = 0;
+    uint64_t yachi_last_pc = 0;
+    uint64_t yachi_reset = 0;
     std::chrono::nanoseconds beginnning_of_task{0};
 
     // init system
@@ -356,7 +353,7 @@ stats_bundle simulate(char const *binary_file,
         recording should be in milliseconds to compare with simulink */
         energy_time_map.insert({to_milliseconds(simul_timer.current_system_time()).count()*1e-3, scheme->get_battery().voltage()});
 
-        if (scheme->is_active(&stats) && !force_off) {
+        if (scheme->is_active(&stats)) {
             // system just powered on, start of active period
             if (!was_active) {
                 active_periods++;
@@ -395,13 +392,17 @@ stats_bundle simulate(char const *binary_file,
                 if(yachi){
                     yachi_counter++;
                     if(yachi_counter != 0 && yachi_target != 0 && yachi_counter >= yachi_target){
-                        force_off = true;
+                        stats.force_off = true;
                         yachi_counter = 0;
-                        yachi_reset++;
+                        //yachi_reset++;
                     }
-                    if(yachi_reset == 10){
-                        yachi_reset = 0;
+//                    if(yachi_reset == 10){
+//                        yachi_reset = 0;
+//                        yachi_target = 0;
+//                    }
+                    if(yachi_last_pc != task_history_tracker.get_current_task()){
                         yachi_target = 0;
+                        yachi_last_pc = task_history_tracker.get_current_task();
                     }
                 }
             }
@@ -415,8 +416,8 @@ stats_bundle simulate(char const *binary_file,
 
         }
         else {
-            if(force_off){
-                force_off = false;
+            if(stats.force_off){
+                stats.force_off = false;
             }
             // system was just on, start of off period
             if (was_active) {
@@ -425,7 +426,7 @@ stats_bundle simulate(char const *binary_file,
                     //oracle sim: reverse failed task
                     if(oriko){
                         sim_restore(oriko_box, scheme, stats, simul_timer, energy_time_map, backup_time_map, task_history_tracker);
-                        force_off = true;
+                        stats.force_off = true;
                         just_backed_up = true;
                         continue;
                     }
@@ -433,7 +434,6 @@ stats_bundle simulate(char const *binary_file,
                     else {
                         task_history_tracker.task_failed(&stats);
                         if(yachi){
-                            //yachi_target = task_history_tracker.get_num_failed();
                             yachi_target = yachi_counter;
                             yachi_counter = 0;
                         }

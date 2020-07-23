@@ -103,6 +103,9 @@ public:
         }else if (battery.voltage() < 1.8){
             active = false;
         }
+        if (stats->force_off){
+            active = false;
+        }
         return active;
 
 

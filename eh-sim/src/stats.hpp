@@ -185,6 +185,7 @@ struct stats_bundle {
   int dead_tasks = 0; //a dead task is a task that is running when the power shuts off without reaching the next checkpoint
   bool backup_requested = true;
   bool recently_backed_up= false;
+  bool force_off = false;
   uint64_t current_task_start_time = 0;
   uint64_t dead_cycles = 0;
   /**

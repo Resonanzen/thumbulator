@@ -27,7 +27,7 @@ namespace ehsim{
         //update the task history after power shuts off during an active period
         void task_failed(stats_bundle *stats);
 
-        uint64_t get_num_failed();
+        uint64_t get_current_task();
     private:
         //pc of the current task
         uint64_t current_task = 0;

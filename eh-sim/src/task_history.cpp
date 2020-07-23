@@ -34,8 +34,7 @@ namespace ehsim{
         stats->dead_cycles += stats->cpu.cycle_count - stats->current_task_start_time;
     }
 
-    uint64_t task_history_tracker::get_num_failed() {
-        //task_history.find(current_task)->second.length();
-        return 0;
+    uint64_t task_history_tracker::get_current_task() {
+        return current_task;
     };
 }
