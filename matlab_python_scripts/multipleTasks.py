@@ -86,9 +86,9 @@ def bar_graph(failure_frequency_dict, pc):
     	frequency.append((num_failures))
     
     plt.bar(labels,frequency, align='center');
-    plt.set_title("Task PC: " + str(pc), fontsize = 14)
+    plt.set_title("PC: " + str(pc), fontsize = 14)
     
-    plt.set_xlabel('Iteration # where task failed',fontsize=12)
+    plt.set_xlabel('# times backed up before power loss',fontsize=12)
 
 #for graph_number,(keys,frequency_list) in enumerate(iteration_failure_frequencies.iteritems()):
     #bar_graph(frequency_list,keys,axs,graph_number);

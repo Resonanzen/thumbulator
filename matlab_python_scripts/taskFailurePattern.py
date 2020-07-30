@@ -52,8 +52,8 @@ def plot_bar(iteration_failure_history):
     x_bar = [i for i in range(len(iteration_failure_history[1:]))]
     if (len(iteration_failure_history) > 1):
         plt.bar(x_bar, iteration_failure_history[1:])
-        plt.xlabel('active period')
-        plt.ylabel('iteration failure number')
+        plt.xlabel('Compute period')
+        plt.ylabel('# times backed up before power loss')
         plt.title('PC: '+ str(iteration_failure_history[0]))
         plt.show()
 
