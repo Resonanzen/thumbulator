@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <queue>
 #include <thumbulator/memory.hpp>
 #include <algorithm>
 
@@ -331,10 +332,12 @@ stats_bundle simulate(char const *binary_file,
     std::map<double, double> energy_time_map; //record energy every ms
     std::map<double, double> backup_time_map; //record energy at time of backup
     bool just_backed_up = false;
-    uint64_t yachi_counter = 0;
-    uint64_t yachi_target = 0;
+    std::map<uint64_t, std::pair<uint64_t,uint64_t>> yachi_table;
+    uint64_t yachi_max_size = 4;
     uint64_t yachi_last_pc = 0;
-    uint64_t yachi_reset = 0;
+    bool yachi_insert = false;
+    uint64_t yachi_temp_counter = 0;
+    std::queue<uint64_t > yachi_fifo;
     std::chrono::nanoseconds beginnning_of_task{0};
 
     // init system
@@ -389,23 +392,29 @@ stats_bundle simulate(char const *binary_file,
                 if(oriko){
                     oriko_box = sim_backup(scheme, stats, simul_timer, energy_time_map, backup_time_map, task_history_tracker);
                 }
+                //prediction mode
                 if(yachi){
-                    yachi_counter++;
-                    if(yachi_counter != 0 && yachi_target != 0 && yachi_counter >= yachi_target){
-                        stats.force_off = true;
-                        yachi_counter = 0;
-                        //yachi_reset++;
+
+                    if(yachi_table.find(yachi_last_pc) != yachi_table.end()){
+                        yachi_table[yachi_last_pc].second++;
+                        if (yachi_table[yachi_last_pc].second >= yachi_table[yachi_last_pc].first){
+                            stats.force_off = true;
+                            yachi_table[yachi_last_pc].second = 0;
+                        }
                     }
-//                    if(yachi_reset == 10){
-//                        yachi_reset = 0;
-//                        yachi_target = 0;
-//                    }
-                    if(yachi_last_pc != task_history_tracker.get_current_task()){
-                        yachi_target = 0;
-                        yachi_last_pc = task_history_tracker.get_current_task();
+                    else {
+                        yachi_temp_counter++;
+                        yachi_insert = true;
+
+                        if (yachi_last_pc != task_history_tracker.get_current_task()) {
+                            yachi_temp_counter = 0;
+                            yachi_insert = false;
+                            yachi_last_pc = task_history_tracker.get_current_task();
+                        }
                     }
                 }
             }
+            // circuit model
             double input_current = get_current_input(power, simul_timer);
             double load_current_drain = 1.3e-3;
 
@@ -434,8 +443,21 @@ stats_bundle simulate(char const *binary_file,
                     else {
                         task_history_tracker.task_failed(&stats);
                         if(yachi){
-                            yachi_target = yachi_counter;
-                            yachi_counter = 0;
+                            if(yachi_insert) {
+                                if(yachi_table.size() >= yachi_max_size) {
+                                    uint64_t pc_to_remove = yachi_fifo.front();
+                                    yachi_fifo.pop();
+                                    yachi_table.erase(pc_to_remove);
+                                }
+                                yachi_fifo.push(yachi_last_pc);
+                                yachi_table[yachi_last_pc].first = yachi_temp_counter;
+                                yachi_insert = false;
+                                yachi_temp_counter = 0;
+                            }
+                            else {
+                                if (yachi_table.find(yachi_last_pc) != yachi_table.end())
+                                    yachi_table[yachi_last_pc].first = yachi_table[yachi_last_pc].second;
+                            }
                         }
                     }
 
